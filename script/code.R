@@ -1,11 +1,6 @@
 # surface design predation/copper / SHF-DFG project
 # update DB 04 May 2021 
 
-
-setwd("~/Desktop/Pheno_UoS_Jan2021/")
-rm(list=ls()) 
-
-
 # packages
 library(data.table)
 library(tidyverse)
@@ -23,7 +18,7 @@ library(survival)
 
 
 ## Data Import --------------------------------------------------------
-AllData <- read.csv("~/Desktop/Pheno_UoS_Jan2021/response_surface_final_April2021.csv")
+AllData <- read.csv("data/response_surface_final_April2021.csv")
 AllData <- as.data.table(AllData)
 head(AllData)
 names(AllData)
