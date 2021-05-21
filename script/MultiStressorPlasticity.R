@@ -1,5 +1,5 @@
-# surface design predation/copper / SHF-DFG project
-# update DB 04 May 2021 
+# surface design predation & copper / SHF-DFG project
+# update DB 21 May 2021 
 
 # packages
 library(data.table)
@@ -11,13 +11,12 @@ library(patchwork)
 library(viridis)
 library(cowplot)
 library(sjPlot)
-
 library(Hmisc)
 library(rms)
 library(survival)
 
 
-## Data Import --------------------------------------------------------
+## DATA IMPORT ---------------------------------------------------
 AllData <- read.csv("data/response_surface_final_April2021.csv")
 AllData <- as.data.table(AllData)
 head(AllData)
@@ -136,9 +135,7 @@ AgeDat.ag <- na.omit(AgeDat_use) %>%
 
 ## INDUCTION ---------------------------------------------------
 
-## summarize --------------------------------------------------------
-
-# total induction
+# total induction (i.e., pedestal and neckteeth)
 
 indSum_1 <- na.omit(IndDat) %>% 
   group_by(clone, juju, copper) %>%
@@ -557,13 +554,13 @@ plot_ind4_nteeth <- ggplot(transform(indSum_4_nteeth, clone = factor(clone, leve
                             panel.spacing.y = unit(1, "mm")) 
 
 
-## plot --------------------------------------------------------
+## INDUCTION plot ---------------------------------------------------
 
 patchwork_plots_induction <- (plot_ind1|plot_ind2|plot_ind3|plot_ind4) /
                                 (plot_ind1_ped|plot_ind2_ped|plot_ind3_ped|plot_ind4_ped) / 
                                     (plot_ind1_nteeth|plot_ind2_nteeth|plot_ind3_nteeth|plot_ind4_nteeth)
 
-png(file = "patchwork_plots_induction.png", width = 1000, height = 800)
+tiff(file = "patchwork_plots_induction.tiff", width = 1000, height = 800)
 
 patchwork_plots_induction + 
   plot_annotation(
@@ -579,8 +576,8 @@ dev.off()
 
 
 
-## LMER() INDUCTION  --------------------------------------------------------
-# maximal induction across all instars (including first instar), w/ induction score == pedestal + nteeth)
+## INDUCTION lmer() ---------------------------------------------------
+# maximal induction across all instars (including first instar, w/ induction score == pedestal + nteeth)
 glimpse(IndDat_use)
 
 # The picture we are modelling, with polynomial order 2 fit in each panel
@@ -592,63 +589,62 @@ ggplot(IndDat_use, aes(x = juju, y = maxInd_total))+
 # The full RSM model
 ind_mod_full <- lmer(maxInd_total ~ poly(copper,2) + poly(juju,2) + copper:juju + (1|cloneID), data = IndDat_use)
 
-# USE SUMMARY TABLE FOR ASSESSING POLYNOMIAL ORDERS
-# no evidence for 2nd order copper in coefficient
-# no evidence for copper:juju either.....
 summary(ind_mod_full)
+# no evidence for 2nd order copper in coefficient
+# no evidence for copper:juju either
 
-# CONFIRMED BY Confint from car (mirrors confint from base, with nicer presentation)
-Confint(ind_mod_full) # also no evidence to keep the interaction (see final model)
+Confint(ind_mod_full)  
+# confirmed by Confint from car package, there is no evidence to keep the interaction (see final model)
 
-# Type II ANOVA using car with KR df via F test.
+# Type II ANOVA using car with Kenward-Roger df via F test.
 Anova(ind_mod_full, type = "II", test = "F")
 
 # Type II ANOVA using car with Wald test
 Anova(ind_mod_full, type = "II")
-
-# Pretty much heading towards the conclusion that
-# copper has no 2nd order effect or in interaction
-# Let's build a model with the reduced copper polynomial
+# Pretty much heading towards the conclusion that copper has no 2nd order effect or in interaction
 
 # Reduce the copper polynomial
 ind_mod_copper_linear <- lmer(maxInd_total ~ copper + poly(juju,2) + copper:juju + (1|cloneID), data = IndDat_use)
 
-# compare full and reduced - there is no difference, hence the loss of this 
-# term is justified by likelihood ratio test
-anova(ind_mod_full, ind_mod_copper_linear)
-summary(ind_mod_copper_linear) # no evidence for copper at all, and nor interaction
+anova(ind_mod_full, ind_mod_copper_linear)  # no difference, i.e. loss of term is justified by likelihood ratio test
+
+summary(ind_mod_copper_linear) 
 Confint(ind_mod_copper_linear)
 
-# let's build the simplest model containing copper (just a single main effect)
-# this completes all the 'testing' for everything
+# Include copper just as a single main effect (i.e., exclude interaction term)
 ind_mod_copper_linear_noInt <- lmer(maxInd_total ~ copper + poly(juju,2) + (1|cloneID), data = IndDat_use)
-anova(ind_mod_copper_linear, ind_mod_copper_linear_noInt)
+
+anova(ind_mod_copper_linear, ind_mod_copper_linear_noInt) # no difference, i.e. loss of term is justified by likelihood ratio test
+
 summary(ind_mod_copper_linear_noInt)
 Confint(ind_mod_copper_linear_noInt)
 
-# NO COPPER MODEL - says yes, keep linear copper
+Anova(ind_mod_copper_linear_noInt)
+
+# NO COPPER model 
 ind_mod_no_copper <- lmer(maxInd_total ~ poly(juju,2) + (1|cloneID), data = IndDat_use)
-anova(ind_mod_copper_linear_noInt, ind_mod_no_copper)
+anova(ind_mod_copper_linear_noInt, ind_mod_no_copper)  # linear copper term is better fit - keep! 
+
 pbkrtest::KRmodcomp(ind_mod_copper_linear_noInt, ind_mod_no_copper)
 pbkrtest::PBmodcomp(ind_mod_copper_linear_noInt, ind_mod_no_copper)
+
 Confint(ind_mod_copper_linear_noInt)
 
-
-## FOR REPORTING, we go back to the full model and the mod with linear copper
+## for REPORTING, we go back to the full model and the model with linear copper
 Anova(ind_mod_full, type = "II", test = "F")
 Anova(ind_mod_copper_linear, type = "II", test = "F") # we see that copper linear
 summary(ind_mod_copper_linear) # no evidence for interaction
 Confint(ind_mod_copper_linear) # suggests even linear effect of copper might not be sig
 
-# two alternative routes to the same answers
+# pbkrtests as alternative
 pbkrtest::KRmodcomp(ind_mod_full, ind_mod_copper_linear) # is the polynomial copper significant 
 pbkrtest::PBmodcomp(ind_mod_full, ind_mod_copper_linear) # parametric bootstrap
 
-
-# The residual diagnostics are fine
+# diagnostics
 diagnose <- fortify.merMod(ind_mod_copper_linear_noInt)
 d1 <- ggplot(diagnose, aes(x = .fitted, y = .resid))+
   geom_point()
+# the residual diagnostics are fine
 
 d2 <- ggplot(diagnose, aes(x = .fitted, y = .resid))+
   geom_point()+
@@ -671,12 +667,7 @@ ind_newX <- expand.grid(
               cloneID = unique(IndDat$cloneID)
             )
 
-# fixed effect is average among clones
-# clone effects are the clone specific 'deviations' from average, their own effects
-# use full model - as suggested by Andrew (WHY ?)
-# ind_fixed_effect <- predict(ind_mod_full, newdata = ind_newX, re.form = NA)
-# ind_clone_effect <- predict(ind_mod_full, newdata = ind_newX, re.form = ~(1|cloneID))
-# use linear model w/o interaction term
+# fixed effect is average among clones & clone effects are the clone-specific 'deviations' from average, their own effects
 ind_fixed_effect <- predict(ind_mod_copper_linear_noInt, newdata = ind_newX, re.form = NA)
 ind_clone_effect <- predict(ind_mod_copper_linear_noInt, newdata = ind_newX, re.form = ~(1|cloneID))
 
@@ -832,10 +823,9 @@ ind_copper_clone <- ggplot(transform(ind_plotData_0JuJu,
                             panel.spacing.y = unit(1, "mm"))
 
 
+## INDUCTION lmer() plot ---------------------------------------------------
 
-## plot --------------------------------------------------------
-
-png(file = "patchwork_plots_induction_model.png", width = 800, height = 800)
+tiff(file = "patchwork_plots_induction_model.tiff", width = 800, height = 800)
 
 patchwork_plots_induction_model <- ind_average / (ind_Mod_average | ind_Mod_byClone) / (ind_juju_clone | ind_copper_clone | guide_area() )
 
@@ -850,11 +840,10 @@ patchwork_plots_induction_model +
 dev.off()
 
 
-
-## LMER() SIZE @ MATURITY --------------------------------------------------------
+## SIZE @ MATURITY lmer() ---------------------------------------------------
 glimpse(SizeDat_use)
 
-# The picture we are modelling, with polynomial order 2 fit in each panel
+# plot w/ polynomial order 2 fit in each panel
 ggplot(SizeDat_use, aes(x = juju, y = size_mat))+
   geom_point()+
   geom_smooth(method = lm, formula = y ~ poly(x,2), se=FALSE)+
@@ -863,12 +852,9 @@ ggplot(SizeDat_use, aes(x = juju, y = size_mat))+
 # The full RSM model
 size_mod_full <- lmer(size_mat ~ poly(copper,2) + poly(juju,2) + copper:juju + (1|cloneID), data = SizeDat_use)
 
-# USE SUMMARY TABLE FOR ASSESSING POLYNOMIAL ORDERS
-# no evidence for 2nd order copper in coefficient
 summary(size_mod_full)
-
-# CONFIRMED BY Confint from car (mirrors confint from base, with nicer presentation)
 Confint(size_mod_full) 
+# no evidence for 2nd order copper in coefficient
 
 # Type II ANOVA using car with KR df via F test.
 Anova(size_mod_full, type = "II", test = "F")
@@ -876,31 +862,26 @@ Anova(size_mod_full, type = "II", test = "F")
 # Type II ANOVA using car with Wald test
 Anova(size_mod_full, type = "II")
 
-# Pretty much heading towards the conclusion that
-# copper has no 2nd order effect
-# Let's build a model with the reduced polynomial
+# Pretty much heading towards the conclusion that copper has no 2nd order effect
 
 # Reduce the copper polynomial
 size_mod_copper_linear <- lmer(size_mat ~ copper + poly(juju,2) + copper:juju + (1|cloneID), data = SizeDat_use)
 
-# compare full and reduced - there is no difference, hence the loss of this 
-# term is justified by likelihood ratio test
-anova(size_mod_full, size_mod_copper_linear)
+anova(size_mod_full, size_mod_copper_linear)  # no difference, loss of term is justified by likelihood ratio test
+
 summary(size_mod_copper_linear) 
 Confint(size_mod_copper_linear)
-
-## FOR REPORTING, we go back to the full model and the mod with linear copper
-Anova(size_mod_full, type = "II", test = "F")
-Anova(size_mod_copper_linear, type = "II", test = "F") 
-summary(size_mod_copper_linear) 
-Confint(size_mod_copper_linear) 
 
 # two alternative routes to the same answers
 pbkrtest::KRmodcomp(size_mod_full, size_mod_copper_linear) # is the polynomial copper significant 
 pbkrtest::PBmodcomp(size_mod_full, size_mod_copper_linear) # parametric bootstrap
 
+## REPORTING
+Anova(size_mod_copper_linear, type = "II", test = "F") # copper, juju and interaction are strongly affecting size @ maturity
+summary(size_mod_copper_linear) 
+Confint(size_mod_copper_linear) 
 
-# The residual diagnostics are fine
+# diagnostics
 diagnose <- fortify.merMod(size_mod_copper_linear)
 d1 <- ggplot(diagnose, aes(x = .fitted, y = .resid))+
   geom_point()
@@ -926,12 +907,7 @@ size_newX <- expand.grid(
   cloneID = unique(SizeDat$cloneID)
 )
 
-# fixed effect is average among clones
-# clone effects are the clone specific 'deviations' from average, their own effects
-# use full model - as suggested by Andrew (WHY ?)
-# size_fixed_effect <- predict(size_mod_copper_full, newdata = size_newX, re.form = NA)
-# size_clone_effect <- predict(size_mod_copper_full, newdata = size_newX, re.form = ~(1|cloneID))
-# use linear model w/ interaction term
+# fixed effect is average among clones & clone effects are the clone-specific 'deviations' from average, their own effects
 size_fixed_effect <- predict(size_mod_copper_linear, newdata = size_newX, re.form = NA)
 size_clone_effect <- predict(size_mod_copper_linear, newdata = size_newX, re.form = ~(1|cloneID))
 
@@ -1088,9 +1064,9 @@ size_copper_clone <- ggplot(transform(size_plotData_0JuJu,
 
 
 
-## plot --------------------------------------------------------
+## SIZE @ MATURITY lmer() plot ---------------------------------------------------
 
-png(file = "patchwork_plots_size_model.png", width = 800, height = 800)
+tiff(file = "patchwork_plots_size_model.tiff", width = 800, height = 800)
 
 patchwork_plots_size_model <- size_average / (size_Mod_average | size_Mod_byClone) / (size_juju_clone | size_copper_clone | guide_area() )
 
@@ -1105,8 +1081,7 @@ patchwork_plots_size_model +
 dev.off()
 
 
-
-## LMER() GROWTHRATE MATURITY --------------------------------------------------------
+## GROWTHRATE MATURITY lmer() ---------------------------------------------------
 glimpse(GrowthDat_use)
 
 # The picture we are modelling, with polynomial order 2 fit in each panel
@@ -1118,34 +1093,27 @@ ggplot(GrowthDat_use, aes(x = juju, y = growth_mat))+
 # The full RSM model
 growth_mod_full <- lmer(growth_mat ~ poly(copper,2) + poly(juju,2) + copper:juju + (1|cloneID), data = GrowthDat_use)
 
-# USE SUMMARY TABLE FOR ASSESSING POLYNOMIAL ORDERS
+summary(growth_mod_full)
+Confint(growth_mod_full) 
 # no evidence for 2nd order copper in coefficient
 # no evidence for 2nd order juju in coefficient (if any at all)
-summary(growth_mod_full)
-
-# CONFIRMED BY Confint from car (mirrors confint from base, with nicer presentation)
-Confint(growth_mod_full) 
 
 # Type II ANOVA using car with KR df via F test.
 Anova(growth_mod_full, type = "II", test = "F")
 
 # Type II ANOVA using car with Wald test
 Anova(growth_mod_full, type = "II")
+# Pretty much heading towards the conclusion that copper and juju have no 2nd order effects
 
 # Reduce the copper and juju polynomials
 growth_mod_linear <- lmer(growth_mat ~ copper + juju + copper:juju + (1|cloneID), data = GrowthDat_use)
 
-# compare full and reduced - there is no difference, hence the loss of these
-# terms is justified by likelihood ratio test
-anova(growth_mod_full, growth_mod_linear)
+anova(growth_mod_full, growth_mod_linear)  # no difference, i.e. loss of terms is justified by likelihood ratio test
+
 summary(growth_mod_linear) 
 Confint(growth_mod_linear)
-Anova(growth_mod_linear, type = "II", test = "F") 
 
-# two alternative routes to the same answers
-pbkrtest::KRmodcomp(growth_mod_full, growth_mod_linear) # is the polynomial copper significant 
-pbkrtest::PBmodcomp(growth_mod_full, growth_mod_linear) # parametric bootstrap
-
+Anova(growth_mod_linear, type = "II", test = "F") # Juju has no effect on growthrate, but there is a strong interaction effect > leave juju in
 
 # The residual diagnostics are OK
 diagnose <- fortify.merMod(growth_mod_linear)
@@ -1173,12 +1141,7 @@ growth_newX <- expand.grid(
   cloneID = unique(GrowthDat$cloneID)
 )
 
-# fixed effect is average among clones
-# clone effects are the clone specific 'deviations' from average, their own effects
-# use full model - as suggested by Andrew (WHY ?)
-# growth_fixed_effect <- predict(growth_mod_full, newdata = size_newX, re.form = NA)
-# growth_clone_effect <- predict(growth_mod_full, newdata = size_newX, re.form = ~(1|cloneID))
-# use linear model w/ interaction term
+# fixed effect is average among clones & clone effects are the clone specific 'deviations' from average, their own effects
 growth_fixed_effect <- predict(growth_mod_linear, newdata = growth_newX, re.form = NA)
 growth_clone_effect <- predict(growth_mod_linear, newdata = growth_newX, re.form = ~(1|cloneID))
 
@@ -1335,9 +1298,9 @@ growth_copper_clone <- ggplot(transform(growth_plotData_0JuJu,
 
 
 
-## plot --------------------------------------------------------
+## GROWTHRATE MATURITY lmer() plot ---------------------------------------------------
 
-png(file = "patchwork_plots_growth_model.png", width = 800, height = 800)
+tiff(file = "patchwork_plots_growth_model.tiff", width = 800, height = 800)
 
 patchwork_plots_growth_model <- growth_average / (growth_Mod_average | growth_Mod_byClone) / (growth_juju_clone | growth_copper_clone | guide_area() )
 
@@ -1352,8 +1315,7 @@ patchwork_plots_growth_model +
 dev.off()
 
 
-
-## LMER() AGE @ MATURITY --------------------------------------------------------
+## AGE @ MATURITY lmer() ---------------------------------------------------
 glimpse(AgeDat_use)
 
 # The picture we are modelling, with polynomial order 2 fit in each panel
@@ -1365,13 +1327,10 @@ ggplot(AgeDat_use, aes(x = juju, y = age_mat))+
 # The full RSM model
 age_mod_full <- lmer(age_mat ~ poly(copper,2) + poly(juju,2) + copper:juju + (1|cloneID), data = AgeDat_use)
 
-# USE SUMMARY TABLE FOR ASSESSING POLYNOMIAL ORDERS
+summary(age_mod_full)
+Confint(age_mod_full) 
 # no evidence for 2nd order copper in coefficient
 # no evidence for 2nd order juju in coefficient (if any at all)
-summary(age_mod_full)
-
-# CONFIRMED BY Confint from car (mirrors confint from base, with nicer presentation)
-Confint(age_mod_full) 
 
 # Type II ANOVA using car with KR df via F test.
 Anova(age_mod_full, type = "II", test = "F")
@@ -1382,19 +1341,19 @@ Anova(age_mod_full, type = "II")
 # Reduce the copper and juju polynomials
 age_mod_linear <- lmer(age_mat ~ copper + juju + copper:juju + (1|cloneID), data = AgeDat_use)
 
-# compare full and reduced - there is no difference, hence the loss of these
-# terms is justified by likelihood ratio test
-anova(age_mod_full, age_mod_linear)
+anova(age_mod_full, age_mod_linear) # no difference, i.e. loss of these terms is justified by likelihood ratio test
+
 summary(age_mod_linear) 
 Confint(age_mod_linear)
+
 Anova(age_mod_linear, type = "II", test = "F") 
+# Juju has no effect on age @ maturity but there is a strong copper and copper*juju interaction effect
 
 # two alternative routes to the same answers
 pbkrtest::KRmodcomp(age_mod_full, age_mod_linear) # is the polynomial copper significant 
 pbkrtest::PBmodcomp(age_mod_full, age_mod_linear) # parametric bootstrap
 
-
-# The residual diagnostics are OK
+# diagnostics
 diagnose <- fortify.merMod(age_mod_linear)
 d1 <- ggplot(diagnose, aes(x = .fitted, y = .resid))+
   geom_point()
@@ -1420,12 +1379,7 @@ age_newX <- expand.grid(
   cloneID = unique(AgeDat$cloneID)
 )
 
-# fixed effect is average among clones
-# clone effects are the clone specific 'deviations' from average, their own effects
-# use full model - as suggested by Andrew (WHY ?)
-# age_fixed_effect <- predict(age_mod_full, newdata = size_newX, re.form = NA)
-# age_clone_effect <- predict(age_mod_full, newdata = size_newX, re.form = ~(1|cloneID))
-# use linear model w/ interaction term
+# fixed effect is average among clones & clone effects are the clone specific 'deviations' from average, their own effects
 age_fixed_effect <- predict(age_mod_linear, newdata = age_newX, re.form = NA)
 age_clone_effect <- predict(age_mod_linear, newdata = age_newX, re.form = ~(1|cloneID))
 
@@ -1582,9 +1536,9 @@ age_copper_clone <- ggplot(transform(age_plotData_0JuJu,
 
 
 
-## plot --------------------------------------------------------
+## AGE @ MATURITY lmer() plot ---------------------------------------------------
 
-png(file = "patchwork_plots_age_model.png", width = 800, height = 800)
+tiff(file = "patchwork_plots_age_model.tiff", width = 800, height = 800)
 
 patchwork_plots_age_model <- age_average / (age_Mod_average | age_Mod_byClone) / (age_juju_clone | age_copper_clone | guide_area() )
 
@@ -1599,25 +1553,16 @@ patchwork_plots_age_model +
 dev.off()
 
 
-
-## survival analysis --------------------------------------------------------
-
-AllData <- read.csv("~/Desktop/Pheno_UoS_Jan2021/response_surface_final_April2021.csv")
-AllData <- as.data.table(AllData)
-head(AllData)
-names(AllData)
-AllData[, cloneID := paste0(clone_type,"_",clone)]
+## SURVIVAL ANALYSIS ---------------------------------------------------
 
 survival <- AllData[, c("clone","cloneID","juju","copper","rep","survival_time","alive_dead")]
-survival
-## survival data based on 'maturity data'; 0 = alive, 1 = dead; 
+## survival data based on 'maturity data', i.e. data was recorded until animals were mature; 0 = alive, 1 = dead; 
 
 # get distance 
 dd <- datadist(survival)
 options(datadist="dd")
 
-# model: parametric survival model = psm; assumes weibull distribution
-# takes a two column response variable Surv(time, code)
+## PSM model: parametric survival model; assumes weibull distribution; takes a two column response variable Surv(time, code)
 
 # juju, copper, and interaction
 mod1 <- psm(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival))
