@@ -14,6 +14,7 @@ library(sjPlot)
 library(Hmisc)
 library(rms)
 library(survival)
+library(survminer)
 
 
 ## DATA IMPORT ---------------------------------------------------
@@ -1643,7 +1644,7 @@ title("Cu = 25, LD33")
 ## this is true for all clones, even though we do see clone-specific survival rates across treatments.
 
 
-# Cox Hazard Model ('coxph': no random effects, 'coxme' when using random effects)
+# Cox Hazard Model (use 'coxph' when no random effects, 'coxme' when using random effects)
 library(coxme)
 # clone as fixed effect
 mod3 <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper + clone, data = na.omit(survival))
@@ -1655,7 +1656,6 @@ summary(mod4)
 
 anova(mod3,mod4)  # random effect model (mod4) is better
 
-
 # exclude clone entirely ?
 mod5 <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival))
 summary(mod5)
@@ -1663,34 +1663,23 @@ summary(mod5)
 anova(mod4,mod5)  # excluding clone (mod5) fits better
 
 # model with robust SE via clustering
-mod6 <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper + cluster(clone), data = na.omit(survival))
-summary(mod6)
-
-anova(mod5,mod6)  # same, use mod 5
+# mod6 <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper + cluster(clone), data = na.omit(survival))
+# summary(mod6)
 
 ## model with a frailty term 
 mod7 <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper + frailty(clone), data = na.omit(survival))
 summary(mod7)
-anova(mod6,mod7)  # frailty term model fits better
+anova(mod5,mod7)  # frailty term model fits better
 
 Anova(mod7, type = "II")
 
-## juju effect is n.s., while copper has a strong effect on survival; there is also a small juju:copper interaction effect. 
+## juju effect is n.s., while copper has a strong effect on survival; there is also a strong juju:copper interaction effect. 
 
-
-## @Andrew - what is the frailty(clone) term ACTUALLY telling us. Not sure I do get the concept of fraily entirely.... 
-## I thought the frailty(clone) is pretty much a random effect on our clones (i.e., + (1|clone) ), but why is mod7 then any 
-## better than mod4 ???
-anova(mod7,mod4)
-
-
-# ftest <- cox.zph(mod7)  # test Cox fit; NOT working with frailty term model...
 ggforest(mod7, data=survival) ## copper has a strong effect on survival, juju effect is n.s.
 
-# these look a bit messy.... 
+# these look a bit messy.... @Andrew, could you check on this, pleaes?
 ggcoxdiagnostics(mod7, type = "deviance", ox.scale = "linear.predictions")  
 ggcoxdiagnostics(mod7, type = "deviance", ox.scale = "observation.id")  
-
 
 # expand grid
 surv_newX <- expand.grid(
@@ -1699,18 +1688,128 @@ surv_newX <- expand.grid(
   cloneID = unique(survival$cloneID)
 )
 
-surv_effects_lp_avg <- predict(mod7, type = "lp", newdata = surv_newX)  # linear prediction
-surv_effects_risk <- predict(mod7, type = "risk", newdata = surv_newX)  # risk factor 
+# fixed effects 
+surv_fixed_effects_lp <- predict(mod7, type = "lp", newdata = surv_newX, re.form = NA)  # linear prediction
+surv_fixed_effects_risk <- predict(mod7, type = "risk", newdata = surv_newX, re.form = NA)  # risk factor 
 
-## @Andrew - I can't figure out how to get the clone-specific predictions from the model. I.e., something similar to 
-## what we used before: predict(model, type=XX, newdata=YY, re.form = ~(1|clone)) when using an lmer() w/ random effect.
-## And, given that the frailty(clone) term is significant, I guess we should plot the resonse surface for each clone separately. 
+# housekeeping
+surv_fixed_plotData <- data.table(surv_newX, surv_fixed_effects_lp, surv_fixed_effects_risk)
 
-surv_plotData <- data.frame(surv_newX, surv_effects_lp, risk=surv_effects_risk)
 
-## plot --------------------------------------------------------
-surv_Mod_average <- ggplot(surv_plotData, aes(x = juju, y = copper))+
-                        geom_raster(aes(fill = risk), interpolate = TRUE)+
+# clone-specific effects
+# C14
+mod5_C14 <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "high_C14"]))
+plot_model(mod5_C14, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
+# plot_model(mod5_C14, type = "emm", terms = c("juju", "copper"), show.data = F)  
+
+surv_newX_C14 <- expand.grid(
+  juju = seq(0,0.5,length = 10),
+  copper = seq(0,25, length = 10),  
+  cloneID = "high_C14")
+
+surv_C14_effects_lp <- predict(mod5_C14, type = "lp", newdata = surv_newX_C14, re.form = NA)  # linear prediction
+surv_C14_effects_risk <- predict(mod5_C14, type = "risk", newdata = surv_newX_C14, re.form = NA)  # risk factor 
+
+# housekeeping
+surv_plotData_C14 <- data.table(surv_newX_C14, surv_clone_effects_lp=surv_C14_effects_lp, surv_clone_effects_risk=surv_C14_effects_risk)
+
+
+# Chard
+mod5_Chard <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "high_Chard"]))
+plot_model(mod5_Chard, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
+# plot_model(mod5_Chard, type = "emm", terms = c("juju", "copper"), show.data = F)  
+
+surv_newX_Chard <- expand.grid(
+  juju = seq(0,0.5,length = 10),
+  copper = seq(0,25, length = 10),  
+  cloneID = "high_Chard")
+
+surv_Chard_effects_lp <- predict(mod5_Chard, type = "lp", newdata = surv_newX_Chard, re.form = NA)  # linear prediction
+surv_Chard_effects_risk <- predict(mod5_Chard, type = "risk", newdata = surv_newX_Chard, re.form = NA)  # risk factor 
+
+# housekeeping
+surv_plotData_Chard <- data.table(surv_newX_Chard, surv_clone_effects_lp=surv_Chard_effects_lp, surv_clone_effects_risk=surv_Chard_effects_risk)
+
+
+# LD33
+mod5_LD33 <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "high_LD33"]))
+plot_model(mod5_LD33, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
+# plot_model(mod5_LD33, type = "emm", terms = c("juju", "copper"), show.data = F)  
+
+surv_newX_LD33 <- expand.grid(
+  juju = seq(0,0.5,length = 10),
+  copper = seq(0,25, length = 10),  
+  cloneID = "high_LD33")
+
+
+surv_LD33_effects_lp <- predict(mod5_LD33, type = "lp", newdata = surv_newX_LD33, re.form = NA)  # linear prediction
+surv_LD33_effects_risk <- predict(mod5_LD33, type = "risk", newdata = surv_newX_LD33, re.form = NA)  # risk factor 
+
+# housekeeping
+surv_plotData_LD33 <- data.table(surv_newX_LD33, surv_clone_effects_lp=surv_LD33_effects_lp, surv_clone_effects_risk=surv_LD33_effects_risk)
+
+
+# D86A
+mod5_D86A <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "low_D86A"]))
+plot_model(mod5_D86A, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
+# plot_model(mod5_D86A, type = "emm", terms = c("juju", "copper"), show.data = F)  
+
+surv_newX_D86A <- expand.grid(
+  juju = seq(0,0.5,length = 10),
+  copper = seq(0,25, length = 10),  
+  cloneID = "low_D86A")
+
+
+surv_D86A_effects_lp <- predict(mod5_D86A, type = "lp", newdata = surv_newX_D86A, re.form = NA)  # linear prediction
+surv_D86A_effects_risk <- predict(mod5_D86A, type = "risk", newdata = surv_newX_D86A, re.form = NA)  # risk factor 
+
+# housekeeping
+surv_plotData_D86A <- data.table(surv_newX_D86A, surv_clone_effects_lp=surv_D86A_effects_lp, surv_clone_effects_risk=surv_D86A_effects_risk)
+
+
+# D87A
+mod5_D87A <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "low_D87A"]))
+plot_model(mod5_D87A, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
+# plot_model(mod5_D87A, type = "emm", terms = c("juju", "copper"), show.data = F)  
+
+surv_newX_D87A <- expand.grid(
+  juju = seq(0,0.5,length = 10),
+  copper = seq(0,25, length = 10),  
+  cloneID = "low_D87A")
+
+surv_D87A_effects_lp <- predict(mod5_D87A, type = "lp", newdata = surv_newX_D87A, re.form = NA)  # linear prediction
+surv_D87A_effects_risk <- predict(mod5_D87A, type = "risk", newdata = surv_newX_D87A, re.form = NA)  # risk factor 
+
+# housekeeping
+surv_plotData_D87A <- data.table(surv_newX_D87A, surv_clone_effects_lp=surv_D87A_effects_lp, surv_clone_effects_risk=surv_D87A_effects_risk)
+
+
+# Cyril
+mod5_Cyril <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "low_Cyril"]))
+plot_model(mod5_Cyril, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
+# plot_model(mod5_Cyril, type = "emm", terms = c("juju", "copper"), show.data = F)  
+
+surv_newX_Cyril <- expand.grid(
+  juju = seq(0,0.5,length = 10),
+  copper = seq(0,25, length = 10),  
+  cloneID = "low_Cyril")
+
+
+surv_Cyril_effects_lp <- predict(mod5_Cyril, type = "lp", newdata = surv_newX_Cyril, re.form = NA)  # linear prediction
+surv_Cyril_effects_risk <- predict(mod5_Cyril, type = "risk", newdata = surv_newX_Cyril, re.form = NA)  # risk factor 
+
+# housekeeping
+surv_plotData_Cyril <- data.table(surv_newX_Cyril, surv_clone_effects_lp=surv_Cyril_effects_lp, surv_clone_effects_risk=surv_Cyril_effects_risk)
+
+
+# combine all clone_effects
+surv_clone_plotData <- as.data.table(rbind(surv_plotData_C14, surv_plotData_Chard, surv_plotData_LD33,
+                                           surv_plotData_D86A, surv_plotData_D87A, surv_plotData_Cyril))
+
+
+# plot the average and clone specifics
+surv_Mod_average <- ggplot(surv_fixed_plotData, aes(x = juju, y = copper))+
+                        geom_raster(aes(fill = surv_fixed_effects_lp), interpolate = TRUE)+  # fill = surv_fixed_effects_risk
                         scale_fill_continuous(type = "viridis")+
                         scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                         labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
@@ -1728,5 +1827,70 @@ surv_Mod_average <- ggplot(surv_plotData, aes(x = juju, y = copper))+
                               strip.text.y = element_text(size =10, color = "black"),
                               panel.spacing.x = unit(4, "mm"),
                               panel.spacing.y = unit(1, "mm"))
+                      
+
+surv_Mod_byClone <- ggplot(transform(surv_clone_plotData,
+                                     cloneID = factor(cloneID, levels=c('high_C14', 'high_Chard', 'high_LD33', 'low_D86A', 'low_D87A', 'low_Cyril'))), 
+                              aes(x = juju, y = copper))+
+                        geom_raster(aes(fill = surv_clone_effects_lp), interpolate = TRUE)+  # fill = surv_clone_effects_risk
+                        scale_fill_continuous(type = "viridis")+
+                        scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
+                        labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+                        facet_wrap(~cloneID, scales = "free")+
+                        theme(rect = element_rect(fill = "transparent"),
+                              panel.grid.major = element_line(colour = "grey70", size=0.25),
+                              panel.grid.minor = element_line(colour = "grey90", size=0.1),
+                              panel.background = element_rect(fill = "transparent",colour = NA),
+                              plot.background = element_rect(fill = "transparent",colour = NA), 
+                              axis.line = element_line(size = 1),
+                              axis.title.x = element_text(size=12, family='Arial'),
+                              axis.title.y = element_text(size=12, family='Arial'),
+                              axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
+                              axis.text = element_text(size=12, family='Arial'),
+                              strip.text.x = element_text(size =10, color = "black"),
+                              strip.text.y = element_text(size =10, color = "black"),
+                              panel.spacing.x = unit(4, "mm"),
+                              panel.spacing.y = unit(1, "mm"))
+
+
+# when using "fill = surv_clone_effects_risk", scales are pretty indifferent - except for LD33; if used, maybe rather plot each clone with their own colour legend
+# 
+# transform(surv_clone_plotData,
+#           cloneID = factor(cloneID, levels=c('high_C14', 'high_Chard', 'high_LD33', 'low_D86A', 'low_D87A', 'low_Cyril'))) %>%
+#   group_split(cloneID) %>%
+#   map(
+#     ~ggplot(., aes(juju, copper)) +
+#       geom_raster(aes(fill = surv_clone_effects_risk), interpolate = TRUE) +
+#       scale_fill_continuous(type = "viridis") +
+#       scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
+#       labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+#       facet_grid(~ cloneID) +
+#       theme(rect = element_rect(fill = "transparent"),
+#             panel.grid.major = element_line(colour = "grey70", size=0.25),
+#             panel.grid.minor = element_line(colour = "grey90", size=0.1),
+#             panel.background = element_rect(fill = "transparent",colour = NA),
+#             plot.background = element_rect(fill = "transparent",colour = NA),
+#             axis.line = element_line(size = 1),
+#             axis.title.x = element_text(size=12, family='Arial'),
+#             axis.title.y = element_text(size=12, family='Arial'),
+#             axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
+#             axis.text = element_text(size=12, family='Arial'),
+#             strip.text.x = element_text(size =10, color = "black"),
+#             strip.text.y = element_text(size =10, color = "black"),
+#             panel.spacing.x = unit(4, "mm"),
+#             panel.spacing.y = unit(1, "mm"))
+#   )
+# 
+
+# %>% 
+#   plot_grid(plotlist = ., align = 'hv', ncol = 3)
+
+# Andrew - the "above "plot_grid" command is not working out, is there an easy fix to plot plots in the 'usual grid' ?
+# No worries, if we decide to go with the linear predictors though...
+
+
+## SURVIVAL ANALYSIS plot ---------------------------------------------------
+
+# TBA ....
 
 
