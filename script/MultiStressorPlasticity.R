@@ -1806,10 +1806,12 @@ surv_plotData_Cyril <- data.table(surv_newX_Cyril, surv_clone_effects_lp=surv_Cy
 surv_clone_plotData <- as.data.table(rbind(surv_plotData_C14, surv_plotData_Chard, surv_plotData_LD33,
                                            surv_plotData_D86A, surv_plotData_D87A, surv_plotData_Cyril))
 
+surv_clone_plotData[, surv_clone_effects_risk_round := round(surv_clone_effects_risk, 0)]
+
 
 # plot the average and clone specifics
 surv_Mod_average <- ggplot(surv_fixed_plotData, aes(x = juju, y = copper))+
-                        geom_raster(aes(fill = surv_fixed_effects_lp), interpolate = TRUE)+  # fill = surv_fixed_effects_risk
+                        geom_raster(aes(fill = surv_fixed_effects_risk), interpolate = TRUE)+  # fill = surv_fixed_effects_risk
                         scale_fill_continuous(type = "viridis")+
                         scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                         labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
@@ -1829,11 +1831,16 @@ surv_Mod_average <- ggplot(surv_fixed_plotData, aes(x = juju, y = copper))+
                               panel.spacing.y = unit(1, "mm"))
                       
 
+
 surv_Mod_byClone <- ggplot(transform(surv_clone_plotData,
                                      cloneID = factor(cloneID, levels=c('high_C14', 'high_Chard', 'high_LD33', 'low_D86A', 'low_D87A', 'low_Cyril'))), 
-                              aes(x = juju, y = copper))+
-                        geom_raster(aes(fill = surv_clone_effects_lp), interpolate = TRUE)+  # fill = surv_clone_effects_risk
-                        scale_fill_continuous(type = "viridis")+
+                              aes(x = juju, y = copper, fill = surv_clone_effects_risk))+
+                        geom_raster(interpolate=T)+  # fill = surv_clone_effects_risk
+                        # scale_fill_gradientn(colours = terrain.colors(20)) + 
+                        # scale_fill_gradient(low = "purple", high = "yellow") + 
+  # scale_fill_gradientn(colours = c("#440154FF","#482677FF","#404788FF","#33638DFF","#287D8EFF","#1F968BFF","#29AF7FFF","#55C667FF","#95D840FF","#B8DE29FF","#DCE319FF","#FDE725FF"), values = c(1,2,3,4,5,6,7,8,9,10,12,15)) +
+  # scale_fill_gradientn(colours = c("viridis_1","red","blue","green","purple","blue","blue","blue","blue","yellow","yellow","yellow"), values = c(0,1,2,3,4,5,6,7,8,9,12,15)) +
+  scale_fill_continuous(type = "viridis") +
                         scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                         labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
                         facet_wrap(~cloneID, scales = "free")+
@@ -1853,34 +1860,37 @@ surv_Mod_byClone <- ggplot(transform(surv_clone_plotData,
                               panel.spacing.y = unit(1, "mm"))
 
 
-# when using "fill = surv_clone_effects_risk", scales are pretty indifferent - except for LD33; if used, maybe rather plot each clone with their own colour legend
-# 
-# transform(surv_clone_plotData,
-#           cloneID = factor(cloneID, levels=c('high_C14', 'high_Chard', 'high_LD33', 'low_D86A', 'low_D87A', 'low_Cyril'))) %>%
-#   group_split(cloneID) %>%
-#   map(
-#     ~ggplot(., aes(juju, copper)) +
-#       geom_raster(aes(fill = surv_clone_effects_risk), interpolate = TRUE) +
-#       scale_fill_continuous(type = "viridis") +
-#       scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
-#       labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
-#       facet_grid(~ cloneID) +
-#       theme(rect = element_rect(fill = "transparent"),
-#             panel.grid.major = element_line(colour = "grey70", size=0.25),
-#             panel.grid.minor = element_line(colour = "grey90", size=0.1),
-#             panel.background = element_rect(fill = "transparent",colour = NA),
-#             plot.background = element_rect(fill = "transparent",colour = NA),
-#             axis.line = element_line(size = 1),
-#             axis.title.x = element_text(size=12, family='Arial'),
-#             axis.title.y = element_text(size=12, family='Arial'),
-#             axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-#             axis.text = element_text(size=12, family='Arial'),
-#             strip.text.x = element_text(size =10, color = "black"),
-#             strip.text.y = element_text(size =10, color = "black"),
-#             panel.spacing.x = unit(4, "mm"),
-#             panel.spacing.y = unit(1, "mm"))
-#   )
-# 
+
+
+
+
+# alternative
+transform(surv_clone_plotData,
+          cloneID = factor(cloneID, levels=c('high_C14', 'high_Chard', 'high_LD33', 'low_D86A', 'low_D87A', 'low_Cyril'))) %>%
+  group_split(cloneID) %>%
+  map(
+    ~ggplot(., aes(juju, copper)) +
+      geom_raster(aes(fill = surv_clone_effects_risk), interpolate = TRUE) +
+      scale_fill_continuous(type = "viridis") +
+      scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
+      labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+      facet_grid(~ cloneID) +
+      theme(rect = element_rect(fill = "transparent"),
+            panel.grid.major = element_line(colour = "grey70", size=0.25),
+            panel.grid.minor = element_line(colour = "grey90", size=0.1),
+            panel.background = element_rect(fill = "transparent",colour = NA),
+            plot.background = element_rect(fill = "transparent",colour = NA),
+            axis.line = element_line(size = 1),
+            axis.title.x = element_text(size=12, family='Arial'),
+            axis.title.y = element_text(size=12, family='Arial'),
+            axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
+            axis.text = element_text(size=12, family='Arial'),
+            strip.text.x = element_text(size =10, color = "black"),
+            strip.text.y = element_text(size =10, color = "black"),
+            panel.spacing.x = unit(4, "mm"),
+            panel.spacing.y = unit(1, "mm"))
+  )
+
 
 # %>% 
 #   plot_grid(plotlist = ., align = 'hv', ncol = 3)
