@@ -1904,10 +1904,12 @@ transform(surv_clone_plotData,
 # TBA ....
 
 
-
 #################################
 #### CONTRASTING LOW vs HIGH ####
 #################################
+
+# run separate models for LOW and HIGH
+### CHECK: in EXPAND DATA: clone_type = unique(SizeDat$clone_type)
 
 ## DATA IMPORT ---------------------------------------------------
 AllData <- read.csv("data/response_surface_final_April2021.csv")
@@ -2469,7 +2471,7 @@ patchwork_plots_induction +
 
 
 
-## INDUCTION lmer() ---------------------------------------------------
+## INDUCTION lm() ---------------------------------------------------
 # maximal induction across all instars (including first instar, w/ induction score == pedestal + nteeth)
 glimpse(IndDat_use)
 
@@ -2600,7 +2602,7 @@ ind_Mod_average_noInt <- ggplot(ind_plotData_noInt, aes(x = juju, y = copper))+
                                   panel.spacing.y = unit(1, "mm"))
 
 
-## INDUCTION lmer() plot ---------------------------------------------------
+## INDUCTION lm() plot ---------------------------------------------------
 
 ind_Mod_average_noInt <- ggplot(ind_plotData_noInt, aes(x = juju, y = copper))+
   geom_raster(aes(fill = ind_fixed_effect), interpolate = TRUE)+
@@ -2624,7 +2626,7 @@ ind_Mod_average_noInt <- ggplot(ind_plotData_noInt, aes(x = juju, y = copper))+
         panel.spacing.y = unit(1, "mm"))
 
 
-## SIZE @ MATURITY lmer() ---------------------------------------------------
+## SIZE @ MATURITY lm() ---------------------------------------------------
 glimpse(SizeDat_use)
 
 # plot w/ polynomial order 2 fit in each panel
@@ -2768,7 +2770,7 @@ size_Mod_average <- ggplot(size_plotData, aes(x = juju, y = copper))+
         panel.spacing.y = unit(1, "mm"))
 
 
-## SIZE @ MATURITY lmer() plot ---------------------------------------------------
+## SIZE @ MATURITY lm() plot ---------------------------------------------------
 
 size_Mod_average <- ggplot(size_plotData, aes(x = juju, y = copper))+
   geom_raster(aes(fill = size_fixed_effect), interpolate = TRUE)+
@@ -2792,7 +2794,7 @@ size_Mod_average <- ggplot(size_plotData, aes(x = juju, y = copper))+
         panel.spacing.y = unit(1, "mm"))
 
 
-## GROWTHRATE MATURITY lmer() ---------------------------------------------------
+## GROWTHRATE MATURITY lm() ---------------------------------------------------
 glimpse(GrowthDat_use)
 
 # The picture we are modelling, with polynomial order 2 fit in each panel
@@ -2905,7 +2907,7 @@ growth_Mod_average <- ggplot(growth_plotData, aes(x = juju, y = copper))+
 
 
 
-## GROWTHRATE MATURITY lmer() plot ---------------------------------------------------
+## GROWTHRATE MATURITY lm() plot ---------------------------------------------------
 
 growth_Mod_average <- ggplot(growth_plotData, aes(x = juju, y = copper))+
   geom_raster(aes(fill = growth_fixed_effect), interpolate = TRUE)+
@@ -2930,7 +2932,7 @@ growth_Mod_average <- ggplot(growth_plotData, aes(x = juju, y = copper))+
 
 
 
-## AGE @ MATURITY lmer() ---------------------------------------------------
+## AGE @ MATURITY lm() ---------------------------------------------------
 glimpse(AgeDat_use)
 
 # The picture we are modelling, with polynomial order 2 fit in each panel
@@ -3017,7 +3019,7 @@ age_Mod_average <- ggplot(age_plotData, aes(x = juju, y = copper))+
         panel.spacing.y = unit(1, "mm"))
 
 
-## AGE @ MATURITY lmer() plot ---------------------------------------------------
+## AGE @ MATURITY lm() plot ---------------------------------------------------
 
 age_Mod_average <- ggplot(age_plotData, aes(x = juju, y = copper))+
   geom_raster(aes(fill = age_fixed_effect), interpolate = TRUE)+
@@ -3143,7 +3145,231 @@ surv_Mod_average <- ggplot(surv_fixed_plotData, aes(x = juju, y = copper))+
 
 ## SURVIVAL ANALYSIS plot ---------------------------------------------------
 
-# TBA ....
+surv_Mod_average <- ggplot(surv_fixed_plotData, aes(x = juju, y = copper))+
+  geom_raster(aes(fill = surv_fixed_effects_risk), interpolate = TRUE)+  # fill = surv_fixed_effects_risk
+  scale_fill_continuous(type = "viridis")+
+  scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
+  labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+  facet_wrap(~cloneID) +
+  theme(rect = element_rect(fill = "transparent"),
+        panel.grid.major = element_line(colour = "grey70", size=0.25),
+        panel.grid.minor = element_line(colour = "grey90", size=0.1),
+        panel.background = element_rect(fill = "transparent",colour = NA),
+        plot.background = element_rect(fill = "transparent",colour = NA), 
+        axis.line = element_line(size = 1),
+        axis.title.x = element_text(size=12, family='Arial'),
+        axis.title.y = element_text(size=12, family='Arial'),
+        axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
+        axis.text = element_text(size=12, family='Arial'),
+        strip.text.x = element_text(size =10, color = "black"),
+        strip.text.y = element_text(size =10, color = "black"),
+        panel.spacing.x = unit(4, "mm"),
+        panel.spacing.y = unit(1, "mm"))
+
+
+
+
+
+
+
+
+
+# run same full model with LOWs and HIGHs
+
+## SIZE @ MATURITY lm() extended ---------------------------------------------------
+glimpse(SizeDat_use)
+
+# The full RSM model
+size_mod_full <- lm(size_mat ~ poly(copper,2) + copper*clone_type + poly(juju,2) + juju*clone_type + copper*juju*clone_type, data = SizeDat_use)
+
+summary(size_mod_full)
+Confint(size_mod_full) 
+# no evidence for 2nd order copper in coefficient
+
+size_mod_copper_linear <- lm(size_mat ~ copper + copper*clone_type + poly(juju,2) + juju*clone_type + copper*juju*clone_type, data = SizeDat_use)
+summary(size_mod_copper_linear)
+Confint(size_mod_copper_linear) 
+
+anova(size_mod_full,size_mod_copper_linear) # no difference, loss of term is justified by likelihood ratio test
+
+# Type II ANOVA using car with KR df via F test.
+Anova(size_mod_copper_linear, type = "II", test = "F")
+
+# Type II ANOVA using car with Wald test
+Anova(size_mod_copper_linear, type = "II")
+
+
+# expand data
+size_newX <- expand.grid(
+  juju = seq(0,0.5,length = 10),
+  copper = seq(0,25, length = 10),  
+  clone_type = unique(SizeDat$clone_type))
+
+
+# fixed effect 
+size_fixed_effect <- predict(size_mod_copper_linear, newdata = size_newX, re.form = NA)
+
+# housekeeping
+size_plotData <- data.frame(size_newX, size_fixed_effect)
+
+
+# plot the average and clone specifics
+size_Mod_average <- ggplot(size_plotData, aes(x = juju, y = copper))+
+                          geom_raster(aes(fill = size_fixed_effect), interpolate = TRUE)+
+                          scale_fill_continuous(type = "viridis")+
+                          scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
+                          labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+                          facet_wrap(~clone_type) +
+                          theme(rect = element_rect(fill = "transparent"),
+                                panel.grid.major = element_line(colour = "grey70", size=0.25),
+                                panel.grid.minor = element_line(colour = "grey90", size=0.1),
+                                panel.background = element_rect(fill = "transparent",colour = NA),
+                                plot.background = element_rect(fill = "transparent",colour = NA), 
+                                axis.line = element_line(size = 1),
+                                axis.title.x = element_text(size=12, family='Arial'),
+                                axis.title.y = element_text(size=12, family='Arial'),
+                                axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
+                                axis.text = element_text(size=12, family='Arial'),
+                                strip.text.x = element_text(size =10, color = "black"),
+                                strip.text.y = element_text(size =10, color = "black"),
+                                panel.spacing.x = unit(4, "mm"),
+                                panel.spacing.y = unit(1, "mm"))
+                        
+
+
+
+## GROWTHRATE @ MATURITY lm() extended ---------------------------------------------------
+glimpse(GrowthDat_use)
+
+# The full RSM model
+growth_mod_full <- lm(growth_mat ~ poly(copper,2) + copper*clone_type + poly(juju,2) + juju*clone_type + copper*juju*clone_type, data = GrowthDat_use)
+
+summary(growth_mod_full)
+Confint(growth_mod_full) 
+# no evidence for 2nd order copper and juju in coefficient
+
+growth_mod_copperANDjuju_linear <- lm(growth_mat ~ copper + copper*clone_type + juju + juju*clone_type + copper*juju*clone_type, data = GrowthDat_use)
+summary(growth_mod_copperANDjuju_linear)
+Confint(growth_mod_copperANDjuju_linear) 
+
+anova(growth_mod_full,growth_mod_copperANDjuju_linear) # no difference, loss of term is justified by likelihood ratio test
+
+# Type II ANOVA using car with KR df via F test.
+Anova(growth_mod_copperANDjuju_linear, type = "II", test = "F")
+
+# Type II ANOVA using car with Wald test
+Anova(growth_mod_copperANDjuju_linear, type = "II")
+
+
+# expand data
+growth_newX <- expand.grid(
+  juju = seq(0,0.5,length = 10),
+  copper = seq(0,25, length = 10),  
+  clone_type = unique(GrowthDat_use$clone_type))
+
+
+# fixed effect 
+growth_fixed_effect <- predict(growth_mod_copperANDjuju_linear, newdata = growth_newX, re.form = NA)
+
+# housekeeping
+growth_plotData <- data.frame(growth_newX, growth_fixed_effect)
+
+
+# plot the avergrowth and clone specifics
+growth_Mod_avergrowth <- ggplot(growth_plotData, aes(x = juju, y = copper))+
+                              geom_raster(aes(fill = growth_fixed_effect), interpolate = TRUE)+
+                              scale_fill_continuous(type = "viridis")+
+                              scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
+                              labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+                              facet_wrap(~clone_type) +
+                              theme(rect = element_rect(fill = "transparent"),
+                                    panel.grid.major = element_line(colour = "grey70", size=0.25),
+                                    panel.grid.minor = element_line(colour = "grey90", size=0.1),
+                                    panel.background = element_rect(fill = "transparent",colour = NA),
+                                    plot.background = element_rect(fill = "transparent",colour = NA), 
+                                    axis.line = element_line(size = 1),
+                                    axis.title.x = element_text(size=12, family='Arial'),
+                                    axis.title.y = element_text(size=12, family='Arial'),
+                                    axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
+                                    axis.text = element_text(size=12, family='Arial'),
+                                    strip.text.x = element_text(size =10, color = "black"),
+                                    strip.text.y = element_text(size =10, color = "black"),
+                                    panel.spacing.x = unit(4, "mm"),
+                                    panel.spacing.y = unit(1, "mm"))
+
+
+
+## AGE @ MATURITY lm() extended ---------------------------------------------------
+glimpse(AgeDat_use)
+
+# The full RSM model
+age_mod_full <- lm(age_mat ~ poly(copper,2) + copper*clone_type + poly(juju,2) + juju*clone_type + copper*juju*clone_type, data = AgeDat_use)
+
+summary(age_mod_full)
+Confint(age_mod_full) 
+# no evidence for 2nd order copper and juju in coefficient
+
+age_mod_copperANDjuju_linear <- lm(age_mat ~ copper + copper*clone_type + juju + juju*clone_type + copper*juju*clone_type, data = AgeDat_use)
+summary(age_mod_copperANDjuju_linear)
+Confint(age_mod_copperANDjuju_linear) 
+
+anova(age_mod_full,age_mod_copperANDjuju_linear) # no difference, loss of term is justified by likelihood ratio test
+
+# Type II ANOVA using car with KR df via F test.
+Anova(age_mod_copperANDjuju_linear, type = "II", test = "F")
+
+# Type II ANOVA using car with Wald test
+Anova(age_mod_copperANDjuju_linear, type = "II")
+
+
+# expand data
+age_newX <- expand.grid(
+  juju = seq(0,0.5,length = 10),
+  copper = seq(0,25, length = 10),  
+  clone_type = unique(AgeDat$clone_type))
+
+# fixed effect 
+age_fixed_effect <- predict(age_mod_copperANDjuju_linear, newdata = age_newX, re.form = NA)
+
+# housekeeping
+age_plotData <- data.frame(age_newX, age_fixed_effect)
+
+
+# plot the average and clone specifics
+age_Mod_average <- ggplot(age_plotData, aes(x = juju, y = copper))+
+                        geom_raster(aes(fill = age_fixed_effect), interpolate = TRUE)+
+                        scale_fill_continuous(type = "viridis")+
+                        scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
+                        labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+                        facet_wrap(~clone_type) +
+                        theme(rect = element_rect(fill = "transparent"),
+                              panel.grid.major = element_line(colour = "grey70", size=0.25),
+                              panel.grid.minor = element_line(colour = "grey90", size=0.1),
+                              panel.background = element_rect(fill = "transparent",colour = NA),
+                              plot.background = element_rect(fill = "transparent",colour = NA), 
+                              axis.line = element_line(size = 1),
+                              axis.title.x = element_text(size=12, family='Arial'),
+                              axis.title.y = element_text(size=12, family='Arial'),
+                              axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
+                              axis.text = element_text(size=12, family='Arial'),
+                              strip.text.x = element_text(size =10, color = "black"),
+                              strip.text.y = element_text(size =10, color = "black"),
+                              panel.spacing.x = unit(4, "mm"),
+                              panel.spacing.y = unit(1, "mm"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
