@@ -3186,9 +3186,13 @@ summary(size_mod_full)
 Confint(size_mod_full) 
 # no evidence for 2nd order copper in coefficient
 
-size_mod_copper_linear <- lm(size_mat ~ copper + copper*clone_type + poly(juju,2) + juju*clone_type + copper*juju*clone_type, data = SizeDat_use)
-summary(size_mod_copper_linear)
-Confint(size_mod_copper_linear) 
+size_mod_copper_linear <- lm(size_mat ~ poly(copper,2) + copper*clone_type + poly(juju,2) + juju*clone_type + copper*juju*clone_type, data = SizeDat_use)
+
+size_mod_copper_linearAPB <- lm(size_mat ~ copper + I(copper^2) + juju + I(juju^2) + copper*juju*clone_type, data = SizeDat_use)
+
+summary(size_mod_copper_linearAPB)
+Anova(size_mod_copper_linearAPB)
+Confint(size_mod_copper_linearAPB) 
 
 anova(size_mod_full,size_mod_copper_linear) # no difference, loss of term is justified by likelihood ratio test
 
@@ -3201,13 +3205,14 @@ Anova(size_mod_copper_linear, type = "II")
 
 # expand data
 size_newX <- expand.grid(
-  juju = seq(0,0.5,length = 10),
-  copper = seq(0,25, length = 10),  
+  juju = seq(0,0.5,length = 3),
+  copper = seq(0,25, length = 3),  
   clone_type = unique(SizeDat$clone_type))
 
 
 # fixed effect 
 size_fixed_effect <- predict(size_mod_copper_linear, newdata = size_newX, re.form = NA)
+size_fixed_effect <- predict(size_mod_copper_linear, newdata = size_newX, type = "response")
 
 # housekeeping
 size_plotData <- data.frame(size_newX, size_fixed_effect)
@@ -3215,7 +3220,7 @@ size_plotData <- data.frame(size_newX, size_fixed_effect)
 
 # plot the average and clone specifics
 size_Mod_average <- ggplot(size_plotData, aes(x = juju, y = copper))+
-                          geom_raster(aes(fill = size_fixed_effect), interpolate = TRUE)+
+                          geom_raster(aes(fill = size_fixed_effect), interpolate = FALSE)+
                           scale_fill_continuous(type = "viridis")+
                           scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                           labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
@@ -3242,15 +3247,28 @@ size_Mod_average <- ggplot(size_plotData, aes(x = juju, y = copper))+
 glimpse(GrowthDat_use)
 
 # The full RSM model
-growth_mod_full <- lm(growth_mat ~ poly(copper,2) + copper*clone_type + poly(juju,2) + juju*clone_type + copper*juju*clone_type, data = GrowthDat_use)
+# growth_mod_full <- lm(growth_mat ~ poly(copper,2) + copper*clone_type + poly(juju,2) + juju*clone_type + copper*juju*clone_type, data = GrowthDat_use)
+
+growth_mod_full <- lm(growth_mat ~ copper + I(copper^2) + juju + I(juju^2) + copper*juju*clone_type, data = GrowthDat_use)
+
 
 summary(growth_mod_full)
 Confint(growth_mod_full) 
 # no evidence for 2nd order copper and juju in coefficient
 
 growth_mod_copperANDjuju_linear <- lm(growth_mat ~ copper + copper*clone_type + juju + juju*clone_type + copper*juju*clone_type, data = GrowthDat_use)
+
+size_mod_full <- lm(size_mat ~ poly(copper,2) + copper*clone_type + poly(juju,2) + juju*clone_type + copper*juju*clone_type, data = SizeDat_use)
+
 summary(growth_mod_copperANDjuju_linear)
 Confint(growth_mod_copperANDjuju_linear) 
+
+
+
+
+
+
+
 
 anova(growth_mod_full,growth_mod_copperANDjuju_linear) # no difference, loss of term is justified by likelihood ratio test
 
@@ -3263,13 +3281,13 @@ Anova(growth_mod_copperANDjuju_linear, type = "II")
 
 # expand data
 growth_newX <- expand.grid(
-  juju = seq(0,0.5,length = 10),
-  copper = seq(0,25, length = 10),  
+  juju = seq(0,0.5,length = 3),
+  copper = seq(0,25, length = 3),  
   clone_type = unique(GrowthDat_use$clone_type))
 
 
 # fixed effect 
-growth_fixed_effect <- predict(growth_mod_copperANDjuju_linear, newdata = growth_newX, re.form = NA)
+growth_fixed_effect <- predict(growth_mod_full, newdata = growth_newX)
 
 # housekeeping
 growth_plotData <- data.frame(growth_newX, growth_fixed_effect)
@@ -3277,7 +3295,7 @@ growth_plotData <- data.frame(growth_newX, growth_fixed_effect)
 
 # plot the avergrowth and clone specifics
 growth_Mod_avergrowth <- ggplot(growth_plotData, aes(x = juju, y = copper))+
-                              geom_raster(aes(fill = growth_fixed_effect), interpolate = TRUE)+
+                              geom_raster(aes(fill = growth_fixed_effect), interpolate = FALSE)+
                               scale_fill_continuous(type = "viridis")+
                               scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                               labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
@@ -3296,6 +3314,9 @@ growth_Mod_avergrowth <- ggplot(growth_plotData, aes(x = juju, y = copper))+
                                     strip.text.y = element_text(size =10, color = "black"),
                                     panel.spacing.x = unit(4, "mm"),
                                     panel.spacing.y = unit(1, "mm"))
+
+
+
 
 
 
@@ -3373,6 +3394,220 @@ age_Mod_average <- ggplot(age_plotData, aes(x = juju, y = copper))+
 
 
 
+
+
+
+
+
+
+
+## Error graphs
+
+# aggregate data on LOW and HIGH and calculate SE among clones for morpho induction and LH traits
+
+# data to use
+# IndDat_use
+# AgeDat_use
+# SizeDat_use
+# GrwothDat_use
+
+IndDat_use_LOWvsHIGH <- as.data.table(na.omit(IndDat_use) %>% 
+  group_by(copper, juju, clone_type) %>% 
+  summarise(
+    meanInd = mean(maxInd_total), 
+    seInd = sd(maxInd_total)/sqrt(sum(!is.na(maxInd_total)))))
+
+IndDat_use_LOWvsHIGH[, Ind_min := meanInd-seInd]
+IndDat_use_LOWvsHIGH[, Ind_max := meanInd+seInd]
+
+setkey(IndDat_use_LOWvsHIGH, copper, juju, clone_type)
+
+
+
+SizeDat_use_LOWvsHIGH <- as.data.table(na.omit(SizeDat_use) %>% 
+  group_by(copper, juju, clone_type) %>% 
+  summarise(
+    meanSize = mean(size_mat), 
+    seSize = sd(size_mat)/sqrt(sum(!is.na(size_mat)))))
+
+SizeDat_use_LOWvsHIGH[, Size_min := meanSize-seSize]
+SizeDat_use_LOWvsHIGH[, Size_max := meanSize+seSize]
+
+setkey(SizeDat_use_LOWvsHIGH, copper, juju, clone_type)
+
+
+
+GrowthDat_use_LOWvsHIGH <- as.data.table(na.omit(GrowthDat_use) %>% 
+  group_by(copper, juju, clone_type) %>% 
+  summarise(
+    meanGrowth = mean(growth_mat), 
+    seGrowth = sd(growth_mat)/sqrt(sum(!is.na(growth_mat)))))
+
+GrowthDat_use_LOWvsHIGH[, Growth_min := meanGrowth-seGrowth]
+GrowthDat_use_LOWvsHIGH[, Growth_max := meanGrowth+seGrowth]
+
+setkey(GrowthDat_use_LOWvsHIGH, copper, juju, clone_type)
+
+
+
+AgeDat_use_LOWvsHIGH <- as.data.table(na.omit(AgeDat_use) %>% 
+  group_by(copper, juju, clone_type) %>% 
+  summarise(
+    meanAge = mean(age_mat), 
+    seAge = sd(age_mat)/sqrt(sum(!is.na(age_mat)))))
+
+AgeDat_use_LOWvsHIGH[, Age_min := meanAge-seAge]
+AgeDat_use_LOWvsHIGH[, Age_max := meanAge+seAge]
+
+setkey(AgeDat_use_LOWvsHIGH, copper, juju, clone_type)
+
+
+
+Ind_Size <- merge(IndDat_use_LOWvsHIGH, SizeDat_use_LOWvsHIGH)
+Ind_Size[, copper_juju := c('Cu0 - Juju0', 
+                            'Cu0 - Juju0', 
+                            'Cu0 - Juju0.1',
+                            'Cu0 - Juju0.1',
+                            'Cu0 - Juju0.25',
+                            'Cu0 - Juju0.25',
+                            'Cu0 - Juju0.5',
+                            'Cu0 - Juju0.5',
+                           
+                            'Cu5 - Juju0', 
+                            'Cu5 - Juju0', 
+                            'Cu5 - Juju0.1',
+                            'Cu5 - Juju0.1',
+                            'Cu5 - Juju0.25',
+                            'Cu5 - Juju0.25',
+                            'Cu5 - Juju0.5',
+                            'Cu5 - Juju0.5',
+                            
+                            'Cu10 - Juju0', 
+                            'Cu10 - Juju0', 
+                            'Cu10 - Juju0.1',
+                            'Cu10 - Juju0.1',
+                            'Cu10 - Juju0.25',
+                            'Cu10 - Juju0.25',
+                            'Cu10 - Juju0.5',
+                            'Cu10 - Juju0.5',
+                            
+                            'Cu25 - Juju0', 
+                            'Cu25 - Juju0', 
+                            'Cu25 - Juju0.1',
+                            'Cu25 - Juju0.1',
+                            'Cu25 - Juju0.25',
+                            'Cu25 - Juju0.25',
+                            'Cu25 - Juju0.5',
+                            'Cu25 - Juju0.5')]
+
+Ind_Growth <- merge(IndDat_use_LOWvsHIGH, GrowthDat_use_LOWvsHIGH)
+Ind_Growth[, copper_juju := c('Cu0 - Juju0', 
+                            'Cu0 - Juju0', 
+                            'Cu0 - Juju0.1',
+                            'Cu0 - Juju0.1',
+                            'Cu0 - Juju0.25',
+                            'Cu0 - Juju0.25',
+                            'Cu0 - Juju0.5',
+                            'Cu0 - Juju0.5',
+                            
+                            'Cu5 - Juju0', 
+                            'Cu5 - Juju0', 
+                            'Cu5 - Juju0.1',
+                            'Cu5 - Juju0.1',
+                            'Cu5 - Juju0.25',
+                            'Cu5 - Juju0.25',
+                            'Cu5 - Juju0.5',
+                            'Cu5 - Juju0.5',
+                            
+                            'Cu10 - Juju0', 
+                            'Cu10 - Juju0', 
+                            'Cu10 - Juju0.1',
+                            'Cu10 - Juju0.1',
+                            'Cu10 - Juju0.25',
+                            'Cu10 - Juju0.25',
+                            'Cu10 - Juju0.5',
+                            'Cu10 - Juju0.5',
+                            
+                            'Cu25 - Juju0', 
+                            'Cu25 - Juju0', 
+                            'Cu25 - Juju0.1',
+                            'Cu25 - Juju0.1',
+                            'Cu25 - Juju0.25',
+                            'Cu25 - Juju0.25',
+                            'Cu25 - Juju0.5',
+                            'Cu25 - Juju0.5')]
+
+
+Ind_Age <- merge(IndDat_use_LOWvsHIGH, AgeDat_use_LOWvsHIGH)
+Ind_Age[, copper_juju := c('Cu0 - Juju0', 
+                              'Cu0 - Juju0', 
+                              'Cu0 - Juju0.1',
+                              'Cu0 - Juju0.1',
+                              'Cu0 - Juju0.25',
+                              'Cu0 - Juju0.25',
+                              'Cu0 - Juju0.5',
+                              'Cu0 - Juju0.5',
+                              
+                              'Cu5 - Juju0', 
+                              'Cu5 - Juju0', 
+                              'Cu5 - Juju0.1',
+                              'Cu5 - Juju0.1',
+                              'Cu5 - Juju0.25',
+                              'Cu5 - Juju0.25',
+                              'Cu5 - Juju0.5',
+                              'Cu5 - Juju0.5',
+                              
+                              'Cu10 - Juju0', 
+                              'Cu10 - Juju0', 
+                              'Cu10 - Juju0.1',
+                              'Cu10 - Juju0.1',
+                              'Cu10 - Juju0.25',
+                              'Cu10 - Juju0.25',
+                              'Cu10 - Juju0.5',
+                              'Cu10 - Juju0.5',
+                              
+                              'Cu25 - Juju0', 
+                              'Cu25 - Juju0', 
+                              'Cu25 - Juju0.1',
+                              'Cu25 - Juju0.1',
+                              'Cu25 - Juju0.25',
+                              'Cu25 - Juju0.25',
+                              'Cu25 - Juju0.5',
+                              'Cu25 - Juju0.5')]
+
+
+
+Ind_Size_plot <- ggplot(transform(Ind_Size,
+                        copper_juju = factor(copper_juju, levels=c('Cu0 - Juju0', 'Cu5 - Juju0', 'Cu10 - Juju0', 'Cu25 - Juju0',
+                                                                   'Cu0 - Juju0.1', 'Cu5 - Juju0.1', 'Cu10 - Juju0.1', 'Cu25 - Juju0.1',
+                                                                   'Cu0 - Juju0.25', 'Cu5 - Juju0.25', 'Cu10 - Juju0.25', 'Cu25 - Juju0.25',
+                                                                   'Cu0 - Juju0.5', 'Cu5 - Juju0.5', 'Cu10 - Juju0.5', 'Cu25 - Juju0.5'))),
+                        aes(x = meanInd,y = meanSize, colour = as.factor(clone_type))) + 
+                        geom_point(size = 3, pch = 21) + 
+                        geom_errorbar(aes(ymin = Size_min, ymax = Size_max)) + 
+                        geom_errorbarh(aes(xmin = Ind_min, xmax = Ind_max)) + 
+                        facet_wrap(~copper_juju) + 
+                        theme(legend.position="top", , 
+                              rect = element_rect(fill = "transparent"),
+                              panel.grid.major = element_line(colour = "grey70", size=0.25),
+                              panel.grid.minor = element_line(colour = "grey90", size=0.1),
+                              panel.background = element_rect(fill = "transparent",colour = NA),
+                              plot.background = element_rect(fill = "transparent",colour = NA), 
+                              #strip.text.x = element_blank(),
+                              #axis.text.x = element_blank(), 
+                              #axis.title.x = element_blank(), 
+                              #axis.title.y = element_blank(),
+                              axis.line = element_line(size = 1),
+                              axis.title.x = element_text(size=12, family='Arial'),
+                              axis.title.y = element_text(size=12, family='Arial'),
+                              axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
+                              axis.text = element_text(size=12, family='Arial'),
+                              strip.text.x = element_text(size =10, color = "black"),
+                              strip.text.y = element_text(size =10, color = "black"),
+                              panel.spacing.x = unit(4, "mm"),
+                              panel.spacing.y = unit(1, "mm"))
+
+Ind_Size_plot  + labs(x = "mean induction score", y = "mean size @ maturity") + scale_x_continuous(limits=c(0,100), breaks=c(0,25,50,75,100)) + scale_color_manual(values=c("#FF0000","#000000"))
 
 
 
