@@ -17,6 +17,11 @@ library(survival)
 library(survminer)
 
 
+
+###################################
+#### CLONE ID AS RANDOM EFFECT ####
+###################################
+
 ## DATA IMPORT ---------------------------------------------------
 AllData <- read.csv("data/response_surface_final_April2021.csv")
 AllData <- as.data.table(AllData)
@@ -630,6 +635,7 @@ pbkrtest::KRmodcomp(ind_mod_copper_linear_noInt, ind_mod_no_copper)
 pbkrtest::PBmodcomp(ind_mod_copper_linear_noInt, ind_mod_no_copper)
 
 Confint(ind_mod_copper_linear_noInt)
+
 
 ## for REPORTING, we go back to the full model and the model with linear copper
 Anova(ind_mod_full, type = "II", test = "F")
@@ -1904,6 +1910,9 @@ transform(surv_clone_plotData,
 # TBA ....
 
 
+
+
+
 #################################
 #### CONTRASTING LOW vs HIGH ####
 #################################
@@ -2556,13 +2565,13 @@ ind_newX_LOW <- expand.grid(
   juju = seq(0,0.5,length = 10),
   copper = seq(0,25, length = 10),  
   cloneID = unique(IndDat_use[clone_type == "low"])$clone_type)
-)
+
 
 ind_newX_HIGH <- expand.grid(
   juju = seq(0,0.5,length = 10),
   copper = seq(0,25, length = 10),  
   cloneID = unique(IndDat_use[clone_type == "high"])$clone_type)
-)
+
 
 
 # fixed effect is average among clones & clone effects are the clone-specific 'deviations' from average, their own effects
@@ -3174,7 +3183,20 @@ surv_Mod_average <- ggplot(surv_fixed_plotData, aes(x = juju, y = copper))+
 
 
 
+
+
+
+
+
 # run same full model with LOWs and HIGHs
+
+
+
+
+################
+## REVISE (!) ##
+################
+
 
 ## SIZE @ MATURITY lm() extended ---------------------------------------------------
 glimpse(SizeDat_use)
@@ -3194,13 +3216,14 @@ summary(size_mod_copper_linearAPB)
 Anova(size_mod_copper_linearAPB)
 Confint(size_mod_copper_linearAPB) 
 
+
 anova(size_mod_full,size_mod_copper_linear) # no difference, loss of term is justified by likelihood ratio test
 
 # Type II ANOVA using car with KR df via F test.
-Anova(size_mod_copper_linear, type = "II", test = "F")
+Anova(size_mod_copper_linearAPB, type = "II", test = "F")
 
 # Type II ANOVA using car with Wald test
-Anova(size_mod_copper_linear, type = "II")
+Anova(size_mod_copper_linearAPB, type = "II")
 
 
 # expand data
@@ -3211,8 +3234,8 @@ size_newX <- expand.grid(
 
 
 # fixed effect 
-size_fixed_effect <- predict(size_mod_copper_linear, newdata = size_newX, re.form = NA)
-size_fixed_effect <- predict(size_mod_copper_linear, newdata = size_newX, type = "response")
+size_fixed_effect <- predict(size_mod_copper_linearAPB, newdata = size_newX, re.form = NA)
+size_fixed_effect <- predict(size_mod_copper_linearAPB, newdata = size_newX, type = "response")
 
 # housekeeping
 size_plotData <- data.frame(size_newX, size_fixed_effect)
@@ -3220,7 +3243,7 @@ size_plotData <- data.frame(size_newX, size_fixed_effect)
 
 # plot the average and clone specifics
 size_Mod_average <- ggplot(size_plotData, aes(x = juju, y = copper))+
-                          geom_raster(aes(fill = size_fixed_effect), interpolate = FALSE)+
+                          geom_raster(aes(fill = size_fixed_effect), interpolate = TRUE)+
                           scale_fill_continuous(type = "viridis")+
                           scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                           labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
@@ -3607,7 +3630,85 @@ Ind_Size_plot <- ggplot(transform(Ind_Size,
                               panel.spacing.x = unit(4, "mm"),
                               panel.spacing.y = unit(1, "mm"))
 
+
+tiff(file = "Ind_Size_plot.tiff", width = 1000, height = 800)
 Ind_Size_plot  + labs(x = "mean induction score", y = "mean size @ maturity") + scale_x_continuous(limits=c(0,100), breaks=c(0,25,50,75,100)) + scale_color_manual(values=c("#FF0000","#000000"))
+dev.off()
+
+
+
+Ind_Age_plot <- ggplot(transform(Ind_Age,
+                                  copper_juju = factor(copper_juju, levels=c('Cu0 - Juju0', 'Cu5 - Juju0', 'Cu10 - Juju0', 'Cu25 - Juju0',
+                                                                             'Cu0 - Juju0.1', 'Cu5 - Juju0.1', 'Cu10 - Juju0.1', 'Cu25 - Juju0.1',
+                                                                             'Cu0 - Juju0.25', 'Cu5 - Juju0.25', 'Cu10 - Juju0.25', 'Cu25 - Juju0.25',
+                                                                             'Cu0 - Juju0.5', 'Cu5 - Juju0.5', 'Cu10 - Juju0.5', 'Cu25 - Juju0.5'))),
+                        aes(x = meanInd,y = meanAge, colour = as.factor(clone_type))) + 
+  geom_point(size = 3, pch = 21) + 
+  geom_errorbar(aes(ymin = Age_min, ymax = Age_max)) + 
+  geom_errorbarh(aes(xmin = Ind_min, xmax = Ind_max)) + 
+  facet_wrap(~copper_juju) + 
+  theme(legend.position="top", , 
+        rect = element_rect(fill = "transparent"),
+        panel.grid.major = element_line(colour = "grey70", size=0.25),
+        panel.grid.minor = element_line(colour = "grey90", size=0.1),
+        panel.background = element_rect(fill = "transparent",colour = NA),
+        plot.background = element_rect(fill = "transparent",colour = NA), 
+        #strip.text.x = element_blank(),
+        #axis.text.x = element_blank(), 
+        #axis.title.x = element_blank(), 
+        #axis.title.y = element_blank(),
+        axis.line = element_line(size = 1),
+        axis.title.x = element_text(size=12, family='Arial'),
+        axis.title.y = element_text(size=12, family='Arial'),
+        axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
+        axis.text = element_text(size=12, family='Arial'),
+        strip.text.x = element_text(size =10, color = "black"),
+        strip.text.y = element_text(size =10, color = "black"),
+        panel.spacing.x = unit(4, "mm"),
+        panel.spacing.y = unit(1, "mm"))
+
+tiff(file = "Ind_Age_plot.tiff", width = 1000, height = 800)
+Ind_Age_plot  + labs(x = "mean induction score", y = "mean age @ maturity") + scale_x_continuous(limits=c(0,100), breaks=c(0,25,50,75,100)) + scale_color_manual(values=c("#FF0000","#000000"))
+dev.off()
+
+
+Ind_Growth_plot <- ggplot(transform(Ind_Growth,
+                                 copper_juju = factor(copper_juju, levels=c('Cu0 - Juju0', 'Cu5 - Juju0', 'Cu10 - Juju0', 'Cu25 - Juju0',
+                                                                            'Cu0 - Juju0.1', 'Cu5 - Juju0.1', 'Cu10 - Juju0.1', 'Cu25 - Juju0.1',
+                                                                            'Cu0 - Juju0.25', 'Cu5 - Juju0.25', 'Cu10 - Juju0.25', 'Cu25 - Juju0.25',
+                                                                            'Cu0 - Juju0.5', 'Cu5 - Juju0.5', 'Cu10 - Juju0.5', 'Cu25 - Juju0.5'))),
+                       aes(x = meanInd,y = meanGrowth, colour = as.factor(clone_type))) + 
+  geom_point(size = 3, pch = 21) + 
+  geom_errorbar(aes(ymin = Growth_min, ymax = Growth_max)) + 
+  geom_errorbarh(aes(xmin = Ind_min, xmax = Ind_max)) + 
+  facet_wrap(~copper_juju) + 
+  theme(legend.position="top", , 
+        rect = element_rect(fill = "transparent"),
+        panel.grid.major = element_line(colour = "grey70", size=0.25),
+        panel.grid.minor = element_line(colour = "grey90", size=0.1),
+        panel.background = element_rect(fill = "transparent",colour = NA),
+        plot.background = element_rect(fill = "transparent",colour = NA), 
+        #strip.text.x = element_blank(),
+        #axis.text.x = element_blank(), 
+        #axis.title.x = element_blank(), 
+        #axis.title.y = element_blank(),
+        axis.line = element_line(size = 1),
+        axis.title.x = element_text(size=12, family='Arial'),
+        axis.title.y = element_text(size=12, family='Arial'),
+        axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
+        axis.text = element_text(size=12, family='Arial'),
+        strip.text.x = element_text(size =10, color = "black"),
+        strip.text.y = element_text(size =10, color = "black"),
+        panel.spacing.x = unit(4, "mm"),
+        panel.spacing.y = unit(1, "mm"))
+
+tiff(file = "Ind_Growth_plot.tiff", width = 1000, height = 800)
+Ind_Growth_plot  + labs(x = "mean induction score", y = "mean growth @ maturity") + scale_x_continuous(limits=c(0,100), breaks=c(0,25,50,75,100)) + scale_color_manual(values=c("#FF0000","#000000"))
+dev.off()
+
+
+
+
 
 
 
