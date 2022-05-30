@@ -1625,14 +1625,14 @@ surv_fixed_plotData <- data.table(surv_newX, fixed_effect_lp=surv_fixed_effects_
 
 
 ## ISSUE (!!)
-# How can one extract predicitons from frailty term model (model 7) in order to get clone-specific effects???
+# How can one extract predicitons from frailty term model (model 1) in order to get clone-specific effects???
 # Based on https://stat.ethz.ch/R-manual/R-devel/library/survival/html/predict.coxph.html this might not be possible:
 # "Models that contain a frailty term are a special case: due to the technical difficulty, 
 # when there is a newdata argument the predictions will always be for a random effect of zero."
 
-# Potential solution - use modelw/ copper, juju and interaction term separately for each clone and extract predictions
+# Potential solution - use model w/ copper, juju and interaction term separately for each clone and extract predictions
 
-## clone-specific effects based on model 3 from above
+## clone-specific effects 
 # C14
 mod3_C14 <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "high_C14"]))
 plot_model(mod3_C14, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
