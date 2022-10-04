@@ -1,5 +1,5 @@
 # surface design predation & copper / SHF-DFG project
-# update DB 24 May 2022
+# update DB 18 August 2022
 
 # packages
 library(data.table)
@@ -18,12 +18,12 @@ library(survminer)
 library(coxme)
 
 
-###################################
-#### CLONE ID AS RANDOM EFFECT ####
-###################################
+#####################
+#### DATA IMPORT ####
+#####################
 
 ## DATA IMPORT ---------------------------------------------------
-AllData <- read.csv("data/response_surface_final_April2021.csv")
+AllData <- read.csv("data/response_surface_final_August2022.csv")  ## August2022 version includes updated somatic growth rate data (i.e., using no ln() )
 AllData <- as.data.table(AllData)
 head(AllData)
 names(AllData)
@@ -121,6 +121,28 @@ GrowthDat.ag <- na.omit(GrowthDat_use) %>%
     seGrowth = sd(growth_mat)/sqrt(sum(!is.na(growth_mat))))
 
 
+# no ln() in formula
+Growth_NoLn <- select(AllData, clone, clone_type, cloneID, juju, copper, rep, 
+                      growth_mat_NoLn = somaticGrowth_maturity_NoLn)
+
+GrowthDat_NoLn <- Growth_NoLn[!growth_mat_NoLn=="NA"]
+
+GrowthDat_NoLn_use <- GrowthDat_NoLn %>% 
+  select(clone, clone_type, cloneID, juju, copper, growth_mat_NoLn) %>% 
+  mutate(copper2 = copper - mean(copper),
+         juju2 = juju - mean(juju))
+
+GrowthDat_NoLn.ag <- na.omit(GrowthDat_NoLn_use) %>% 
+  group_by(copper, juju, cloneID) %>% 
+  summarise(
+    meanGrowth = mean(growth_mat_NoLn), 
+    seGrowth = sd(growth_mat_NoLn)/sqrt(sum(!is.na(growth_mat_NoLn))))
+
+# plot ln() vs noLn re growth rate calculation...
+plot(GrowthDat.ag$meanGrowth, GrowthDat_NoLn.ag$meanGrowth)
+abline(0,1)
+
+
 # age data
 Age <- select(AllData, clone, clone_type, cloneID, juju, copper, rep, 
                  age_mat = age_maturity)
@@ -138,6 +160,12 @@ AgeDat.ag <- na.omit(AgeDat_use) %>%
     meanAge = mean(age_mat), 
     seAge = sd(age_mat)/sqrt(sum(!is.na(age_mat))))
 
+
+
+
+###################################
+#### CLONE ID AS RANDOM EFFECT ####
+###################################
 
 ## INDUCTION ---------------------------------------------------
 
@@ -639,6 +667,7 @@ pbkrtest::PBmodcomp(ind_mod_copper_linear_noInt, ind_mod_no_copper)
 Anova(ind_mod_copper_linear_noInt, type = "II", test = "F") # we see that copper linear
 Confint(ind_mod_copper_linear_noInt) # suggests even linear effect of copper might not be sig
 
+
 ## for REPORTING, we go back to the full model and the model with linear copper
 Anova(ind_mod_full, type = "II", test = "F")
 Anova(ind_mod_copper_linear, type = "II", test = "F") # we see that copper linear
@@ -690,17 +719,17 @@ ind_Mod_average <- ggplot(ind_plotData, aes(x = juju, y = copper))+
                           geom_raster(aes(fill = fixed_effect), interpolate = TRUE)+
                           scale_fill_continuous(type = "viridis")+
                           scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
-                          labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+                          labs(y=expression(copper~(µg~L^{-1})), x=expression(predator~cue~(µl~ml^{-1}))) +
                           theme(rect = element_rect(fill = "transparent"),
                                 panel.grid.major = element_line(colour = "grey70", size=0.25),
                                 panel.grid.minor = element_line(colour = "grey90", size=0.1),
                                 panel.background = element_rect(fill = "transparent",colour = NA),
                                 plot.background = element_rect(fill = "transparent",colour = NA), 
                                 axis.line = element_line(size = 1),
-                                axis.title.x = element_text(size=12, family='Arial'),
-                                axis.title.y = element_text(size=12, family='Arial'),
+                                axis.title.x = element_text(size=12),
+                                axis.title.y = element_text(size=12),
                                 axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                                axis.text = element_text(size=12, family='Arial'),
+                                axis.text = element_text(size=12),
                                 strip.text.x = element_text(size =10, color = "black"),
                                 strip.text.y = element_text(size =10, color = "black"),
                                 panel.spacing.x = unit(4, "mm"),
@@ -712,7 +741,7 @@ ind_Mod_byClone <- ggplot(transform(ind_plotData,
                           geom_raster(aes(fill = clone_effect), interpolate = TRUE)+
                           scale_fill_continuous(type = "viridis")+
                           scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
-                          labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+                          labs(y=expression(copper~(µg~L^{-1})), x=expression(predator~cue~(µl~ml^{-1}))) +
                           facet_wrap(~cloneID)+
                           theme(rect = element_rect(fill = "transparent"),
                                 panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -720,10 +749,10 @@ ind_Mod_byClone <- ggplot(transform(ind_plotData,
                                 panel.background = element_rect(fill = "transparent",colour = NA),
                                 plot.background = element_rect(fill = "transparent",colour = NA), 
                                 axis.line = element_line(size = 1),
-                                axis.title.x = element_text(size=12, family='Arial'),
-                                axis.title.y = element_text(size=12, family='Arial'),
+                                axis.title.x = element_text(size=12),
+                                axis.title.y = element_text(size=12),
                                 axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                                axis.text = element_text(size=12, family='Arial'),
+                                axis.text = element_text(size=12),
                                 strip.text.x = element_text(size =10, color = "black"),
                                 strip.text.y = element_text(size =10, color = "black"),
                                 panel.spacing.x = unit(4, "mm"),
@@ -736,7 +765,7 @@ ind_average <- ggplot(transform(IndDat.ag,
                   geom_line(aes(linetype=cloneID),size = 0.7) +
                   scale_linetype_manual(values=c("twodash","twodash","twodash","solid","solid","solid")) +
                   scale_color_viridis(discrete = TRUE, option = "C")+
-                  labs(y=expression(mean~induction[max]), x=expression(juju~(µl~ml^{-1}))) +
+                  labs(y=expression(mean~induction[max]), x=expression(predator~cue~(µl~ml^{-1}))) +
                   scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                   ylim(0,105) +
                   facet_wrap(~copper, nrow = 1) +
@@ -746,10 +775,10 @@ ind_average <- ggplot(transform(IndDat.ag,
                       panel.background = element_rect(fill = "transparent",colour = NA),
                       plot.background = element_rect(fill = "transparent",colour = NA), 
                       axis.line = element_line(size = 1),
-                      axis.title.x = element_text(size=12, family='Arial'),
-                      axis.title.y = element_text(size=12, family='Arial'),
+                      axis.title.x = element_text(size=12),
+                      axis.title.y = element_text(size=12),
                       axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                      axis.text = element_text(size=12, family='Arial'),
+                      axis.text = element_text(size=12),
                       strip.text.x = element_text(size =10, color = "black"),
                       strip.text.y = element_text(size =10, color = "black"),
                       panel.spacing.x = unit(4, "mm"),
@@ -791,7 +820,7 @@ ind_juju_clone <- ggplot(transform(ind_plotData_0Cu,
                       geom_line(aes(linetype=cloneID),size = 1) + 
                       scale_linetype_manual(values=c("twodash","twodash","twodash","solid","solid","solid")) +
                       scale_color_viridis(discrete = TRUE, option = "C")+
-                      labs(y=expression(mean~induction[max]), x=expression(juju~(µl~ml^{-1}))) +
+                      labs(y=expression(mean~induction[max]), x=expression(predator~cue~(µl~ml^{-1}))) +
                       scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                       ylim(0,105) +
                       theme(rect = element_rect(fill = "transparent"),
@@ -800,10 +829,10 @@ ind_juju_clone <- ggplot(transform(ind_plotData_0Cu,
                             panel.background = element_rect(fill = "transparent",colour = NA),
                             plot.background = element_rect(fill = "transparent",colour = NA), 
                             axis.line = element_line(size = 1),
-                            axis.title.x = element_text(size=12, family='Arial'),
-                            axis.title.y = element_text(size=12, family='Arial'),
+                            axis.title.x = element_text(size=12),
+                            axis.title.y = element_text(size=12),
                             axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                            axis.text = element_text(size=12, family='Arial'),
+                            axis.text = element_text(size=12),
                             strip.text.x = element_text(size =10, color = "black"),
                             strip.text.y = element_text(size =10, color = "black"),
                             panel.spacing.x = unit(4, "mm"),
@@ -815,7 +844,7 @@ ind_copper_clone <- ggplot(transform(ind_plotData_0JuJu,
                       geom_line(aes(linetype=cloneID),size = 1) + 
                       scale_linetype_manual(values=c("twodash","twodash","twodash","solid","solid","solid")) +
                       scale_color_viridis(discrete = TRUE, option = "C")+
-                      labs(y=expression(mean~induction[max]), x=expression(copper~(mg~L^{-1}))) +
+                      labs(y=expression(mean~induction[max]), x=expression(copper~(µg~L^{-1}))) +
                       scale_x_continuous(breaks=c(0,5,10,15,20,25)) +
                       ylim(0,105) +
                       theme(rect = element_rect(fill = "transparent"),
@@ -824,10 +853,10 @@ ind_copper_clone <- ggplot(transform(ind_plotData_0JuJu,
                             panel.background = element_rect(fill = "transparent",colour = NA),
                             plot.background = element_rect(fill = "transparent",colour = NA), 
                             axis.line = element_line(size = 1),
-                            axis.title.x = element_text(size=12, family='Arial'),
-                            axis.title.y = element_text(size=12, family='Arial'),
+                            axis.title.x = element_text(size=12),
+                            axis.title.y = element_text(size=12),
                             axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                            axis.text = element_text(size=12, family='Arial'),
+                            axis.text = element_text(size=12),
                             strip.text.x = element_text(size =10, color = "black"),
                             strip.text.y = element_text(size =10, color = "black"),
                             panel.spacing.x = unit(4, "mm"),
@@ -836,17 +865,24 @@ ind_copper_clone <- ggplot(transform(ind_plotData_0JuJu,
 
 ## INDUCTION lmer() plot ---------------------------------------------------
 
-patchwork_plots_induction_model <- ind_average / (ind_Mod_average | ind_Mod_byClone) / (ind_juju_clone | ind_copper_clone | guide_area() )
+patchwork_plots_induction_model <- ind_average / (ind_Mod_average | ind_Mod_byClone) / (ind_juju_clone | ind_copper_clone )
 
+# patchwork_plots_induction_model + 
+#   plot_annotation(
+#     title = 'maximal induction @ days 1-4',
+#     subtitle = '(A) effect of Cu and Juju on genetically distinct clones (B) average effect of Cu and JuJu among clones, (C) clone specific effects of Cu and JuJu, 
+#     (D) effect of JuJu among clones, (E) effect of Cu among clones', 
+#     tag_levels = 'A') + 
+#   plot_layout(nrow=3, height = c(3,6,3), guides = 'collect') & theme(legend.position = "right")
+# 
+# ggsave("patchwork_plots_induction_model.tiff", dpi = 300, device = "tiff")  # Saving 14.3 x 11 in image
+
+setEPS()
+postscript("SFig1.eps", colormodel = "RGB", width = 13, height = 10)
 patchwork_plots_induction_model + 
-  plot_annotation(
-    title = 'maximal induction @ days 1-4',
-    subtitle = '(A) effect of Cu and Juju on genetically distinct clones (B) average effect of Cu and JuJu among clones, (C) clone specific effects of Cu and JuJu, 
-    (D) effect of JuJu among clones, (E) effect of Cu among clones', 
-    tag_levels = 'A') + 
-  plot_layout(nrow=3, height = c(3,6,3), guides = 'collect') & theme(legend.position = "right")
-
-ggsave("patchwork_plots_induction_model.tiff", dpi = 300, device = "tiff")  # Saving 14.3 x 11 in image
+  plot_annotation(tag_levels = 'A') + 
+  plot_layout(nrow=3, height = c(5,10,5), guides = 'collect') & theme(legend.position = "right")
+dev.off()
 
 
 ## SIZE @ MATURITY lmer() ---------------------------------------------------
@@ -937,17 +973,17 @@ size_Mod_average <- ggplot(size_plotData, aes(x = juju, y = copper))+
                           geom_raster(aes(fill = fixed_effect), interpolate = TRUE)+
                           scale_fill_continuous(type = "viridis")+
                           scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
-                          labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+                          labs(y=expression(copper~(µg~L^{-1})), x=expression(predator~cue~(µl~ml^{-1}))) +
                           theme(rect = element_rect(fill = "transparent"),
                                 panel.grid.major = element_line(colour = "grey70", size=0.25),
                                 panel.grid.minor = element_line(colour = "grey90", size=0.1),
                                 panel.background = element_rect(fill = "transparent",colour = NA),
                                 plot.background = element_rect(fill = "transparent",colour = NA), 
                                 axis.line = element_line(size = 1),
-                                axis.title.x = element_text(size=12, family='Arial'),
-                                axis.title.y = element_text(size=12, family='Arial'),
+                                axis.title.x = element_text(size=12),
+                                axis.title.y = element_text(size=12),
                                 axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                                axis.text = element_text(size=12, family='Arial'),
+                                axis.text = element_text(size=12),
                                 strip.text.x = element_text(size =10, color = "black"),
                                 strip.text.y = element_text(size =10, color = "black"),
                                 panel.spacing.x = unit(4, "mm"),
@@ -959,7 +995,7 @@ size_Mod_byClone <- ggplot(transform(size_plotData,
                           geom_raster(aes(fill = clone_effect), interpolate = TRUE)+
                           scale_fill_continuous(type = "viridis")+
                           scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
-                          labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+                          labs(y=expression(copper~(µg~L^{-1})), x=expression(predator~cue~(µl~ml^{-1}))) +
                           facet_wrap(~cloneID)+
                           theme(rect = element_rect(fill = "transparent"),
                                 panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -967,10 +1003,10 @@ size_Mod_byClone <- ggplot(transform(size_plotData,
                                 panel.background = element_rect(fill = "transparent",colour = NA),
                                 plot.background = element_rect(fill = "transparent",colour = NA), 
                                 axis.line = element_line(size = 1),
-                                axis.title.x = element_text(size=12, family='Arial'),
-                                axis.title.y = element_text(size=12, family='Arial'),
+                                axis.title.x = element_text(size=12),
+                                axis.title.y = element_text(size=12),
                                 axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                                axis.text = element_text(size=12, family='Arial'),
+                                axis.text = element_text(size=12),
                                 strip.text.x = element_text(size =10, color = "black"),
                                 strip.text.y = element_text(size =10, color = "black"),
                                 panel.spacing.x = unit(4, "mm"),
@@ -983,7 +1019,7 @@ size_average <- ggplot(transform(SizeDat.ag,
                       geom_line(aes(linetype=cloneID),size = 0.7) +
                       scale_linetype_manual(values=c("twodash","twodash","twodash","solid","solid","solid")) +
                       scale_color_viridis(discrete = TRUE, option = "C")+
-                      labs(y=expression(size[maturity]~(cm)), x=expression(juju~(µl~ml^{-1}))) +
+                      labs(y=expression(size[maturity]~(mm)), x=expression(juju~(µl~ml^{-1}))) +
                       scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                       ylim(1.3,2.3) +
                       facet_wrap(~copper, nrow = 1) +
@@ -993,10 +1029,10 @@ size_average <- ggplot(transform(SizeDat.ag,
                           panel.background = element_rect(fill = "transparent",colour = NA),
                           plot.background = element_rect(fill = "transparent",colour = NA), 
                           axis.line = element_line(size = 1),
-                          axis.title.x = element_text(size=12, family='Arial'),
-                          axis.title.y = element_text(size=12, family='Arial'),
+                          axis.title.x = element_text(size=12),
+                          axis.title.y = element_text(size=12),
                           axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                          axis.text = element_text(size=12, family='Arial'),
+                          axis.text = element_text(size=12),
                           strip.text.x = element_text(size =10, color = "black"),
                           strip.text.y = element_text(size =10, color = "black"),
                           panel.spacing.x = unit(4, "mm"),
@@ -1038,7 +1074,7 @@ size_juju_clone <- ggplot(transform(size_plotData_0Cu,
                         geom_line(aes(linetype=cloneID),size = 1) + 
                         scale_linetype_manual(values=c("twodash","twodash","twodash","solid","solid","solid")) +
                         scale_color_viridis(discrete = TRUE, option = "C")+
-                        labs(y=expression(size[maturity]~(cm)), x=expression(juju~(µl~ml^{-1}))) +
+                        labs(y=expression(size[maturity]~(mm)), x=expression(predator~cue~(µl~ml^{-1}))) +
                         scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                         ylim(1.3,2.3) +
                         theme(rect = element_rect(fill = "transparent"),
@@ -1047,10 +1083,10 @@ size_juju_clone <- ggplot(transform(size_plotData_0Cu,
                               panel.background = element_rect(fill = "transparent",colour = NA),
                               plot.background = element_rect(fill = "transparent",colour = NA), 
                               axis.line = element_line(size = 1),
-                              axis.title.x = element_text(size=12, family='Arial'),
-                              axis.title.y = element_text(size=12, family='Arial'),
+                              axis.title.x = element_text(size=12),
+                              axis.title.y = element_text(size=12),
                               axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                              axis.text = element_text(size=12, family='Arial'),
+                              axis.text = element_text(size=12),
                               strip.text.x = element_text(size =10, color = "black"),
                               strip.text.y = element_text(size =10, color = "black"),
                               panel.spacing.x = unit(4, "mm"),
@@ -1062,7 +1098,7 @@ size_copper_clone <- ggplot(transform(size_plotData_0JuJu,
                           geom_line(aes(linetype=cloneID),size = 1) + 
                           scale_linetype_manual(values=c("twodash","twodash","twodash","solid","solid","solid")) +
                           scale_color_viridis(discrete = TRUE, option = "C")+
-                          labs(y=expression(size[maturity]~(cm)), x=expression(copper~(mg~L^{-1}))) +
+                          labs(y=expression(size[maturity]~(mm)), x=expression(copper~(µg~L^{-1}))) +
                           scale_x_continuous(breaks=c(0,5,10,15,20,25)) +
                           ylim(1.3,2.3) +
                           theme(rect = element_rect(fill = "transparent"),
@@ -1071,10 +1107,10 @@ size_copper_clone <- ggplot(transform(size_plotData_0JuJu,
                                 panel.background = element_rect(fill = "transparent",colour = NA),
                                 plot.background = element_rect(fill = "transparent",colour = NA), 
                                 axis.line = element_line(size = 1),
-                                axis.title.x = element_text(size=12, family='Arial'),
-                                axis.title.y = element_text(size=12, family='Arial'),
+                                axis.title.x = element_text(size=12),
+                                axis.title.y = element_text(size=12),
                                 axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                                axis.text = element_text(size=12, family='Arial'),
+                                axis.text = element_text(size=12),
                                 strip.text.x = element_text(size =10, color = "black"),
                                 strip.text.y = element_text(size =10, color = "black"),
                                 panel.spacing.x = unit(4, "mm"),
@@ -1084,17 +1120,24 @@ size_copper_clone <- ggplot(transform(size_plotData_0JuJu,
 
 ## SIZE @ MATURITY lmer() plot ---------------------------------------------------
 
-patchwork_plots_size_model <- size_average / (size_Mod_average | size_Mod_byClone) / (size_juju_clone | size_copper_clone | guide_area() )
+patchwork_plots_size_model <- size_average / (size_Mod_average | size_Mod_byClone) / (size_juju_clone | size_copper_clone )
 
+# patchwork_plots_size_model + 
+#   plot_annotation(
+#     title = 'size @ maturity',
+#     subtitle = '(A) effect of Cu and Juju on genetically distinct clones (B) average effect of Cu and JuJu among clones, (C) clone specific effects of Cu and JuJu, 
+#     (D) effect of JuJu among clones, (E) effect of Cu among clones', 
+#     tag_levels = 'A') + 
+#   plot_layout(nrow=3, height = c(3,6,3), guides = 'collect') & theme(legend.position = "right")
+# 
+# ggsave("patchwork_plots_sizeMat_model.tiff", dpi = 300, device = "tiff")  # Saving 14.3 x 11 in image
+
+setEPS()
+postscript("SFig2.eps", colormodel = "RGB", width = 13, height = 10)
 patchwork_plots_size_model + 
-  plot_annotation(
-    title = 'size @ maturity',
-    subtitle = '(A) effect of Cu and Juju on genetically distinct clones (B) average effect of Cu and JuJu among clones, (C) clone specific effects of Cu and JuJu, 
-    (D) effect of JuJu among clones, (E) effect of Cu among clones', 
-    tag_levels = 'A') + 
-  plot_layout(nrow=3, height = c(3,6,3), guides = 'collect') & theme(legend.position = "right")
-
-ggsave("patchwork_plots_sizeMat_model.tiff", dpi = 300, device = "tiff")  # Saving 14.3 x 11 in image
+  plot_annotation(tag_levels = 'A') + 
+  plot_layout(nrow=3, height = c(5,10,5), guides = 'collect') & theme(legend.position = "right")
+dev.off()
 
 
 ## GROWTHRATE MATURITY lmer() ---------------------------------------------------
@@ -1178,17 +1221,17 @@ growth_Mod_average <- ggplot(growth_plotData, aes(x = juju, y = copper))+
                           geom_raster(aes(fill = fixed_effect), interpolate = TRUE)+
                           scale_fill_continuous(type = "viridis")+
                           scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
-                          labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+                          labs(y=expression(copper~(µg~L^{-1})), x=expression(predator~cue~(µl~ml^{-1}))) +
                           theme(rect = element_rect(fill = "transparent"),
                                 panel.grid.major = element_line(colour = "grey70", size=0.25),
                                 panel.grid.minor = element_line(colour = "grey90", size=0.1),
                                 panel.background = element_rect(fill = "transparent",colour = NA),
                                 plot.background = element_rect(fill = "transparent",colour = NA), 
                                 axis.line = element_line(size = 1),
-                                axis.title.x = element_text(size=12, family='Arial'),
-                                axis.title.y = element_text(size=12, family='Arial'),
+                                axis.title.x = element_text(size=12),
+                                axis.title.y = element_text(size=12),
                                 axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                                axis.text = element_text(size=12, family='Arial'),
+                                axis.text = element_text(size=12),
                                 strip.text.x = element_text(size =10, color = "black"),
                                 strip.text.y = element_text(size =10, color = "black"),
                                 panel.spacing.x = unit(4, "mm"),
@@ -1200,7 +1243,7 @@ growth_Mod_byClone <- ggplot(transform(growth_plotData,
                             geom_raster(aes(fill = clone_effect), interpolate = TRUE)+
                             scale_fill_continuous(type = "viridis")+
                             scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
-                            labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+                            labs(y=expression(copper~(µg~L^{-1})), x=expression(predator~cue~(µl~ml^{-1}))) +
                             facet_wrap(~cloneID)+
                             theme(rect = element_rect(fill = "transparent"),
                                   panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -1208,10 +1251,10 @@ growth_Mod_byClone <- ggplot(transform(growth_plotData,
                                   panel.background = element_rect(fill = "transparent",colour = NA),
                                   plot.background = element_rect(fill = "transparent",colour = NA), 
                                   axis.line = element_line(size = 1),
-                                  axis.title.x = element_text(size=12, family='Arial'),
-                                  axis.title.y = element_text(size=12, family='Arial'),
+                                  axis.title.x = element_text(size=12),
+                                  axis.title.y = element_text(size=12),
                                   axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                                  axis.text = element_text(size=12, family='Arial'),
+                                  axis.text = element_text(size=12),
                                   strip.text.x = element_text(size =10, color = "black"),
                                   strip.text.y = element_text(size =10, color = "black"),
                                   panel.spacing.x = unit(4, "mm"),
@@ -1224,7 +1267,7 @@ growth_average <- ggplot(transform(GrowthDat.ag,
                       geom_line(aes(linetype=cloneID),size = 0.7) +
                       scale_linetype_manual(values=c("twodash","twodash","twodash","solid","solid","solid")) +
                       scale_color_viridis(discrete = TRUE, option = "C")+
-                      labs(y=expression(Growth~rate[maturity]), x=expression(juju~(µl~ml^{-1}))) +
+                      labs(y=expression(growth~rate~(mm~d^{-1})), x=expression(predator~cue~(µl~ml^{-1}))) +
                       scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                       ylim(0.05,0.21) +
                       facet_wrap(~copper, nrow = 1) +
@@ -1234,10 +1277,10 @@ growth_average <- ggplot(transform(GrowthDat.ag,
                             panel.background = element_rect(fill = "transparent",colour = NA),
                             plot.background = element_rect(fill = "transparent",colour = NA), 
                             axis.line = element_line(size = 1),
-                            axis.title.x = element_text(size=12, family='Arial'),
-                            axis.title.y = element_text(size=12, family='Arial'),
+                            axis.title.x = element_text(size=12),
+                            axis.title.y = element_text(size=12),
                             axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                            axis.text = element_text(size=12, family='Arial'),
+                            axis.text = element_text(size=12),
                             strip.text.x = element_text(size =10, color = "black"),
                             strip.text.y = element_text(size =10, color = "black"),
                             panel.spacing.x = unit(4, "mm"),
@@ -1279,7 +1322,7 @@ growth_juju_clone <- ggplot(transform(growth_plotData_0Cu,
                           geom_line(aes(linetype=cloneID),size = 1) + 
                           scale_linetype_manual(values=c("twodash","twodash","twodash","solid","solid","solid")) +
                           scale_color_viridis(discrete = TRUE, option = "C")+
-                          labs(y=expression(Growth~rate[maturity]), x=expression(juju~(µl~ml^{-1}))) +
+                          labs(y=expression(growth~rate~(mm~d^{-1})), x=expression(predator~cue~(µl~ml^{-1}))) +
                           scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                           ylim(0.05,0.21) +
                           theme(rect = element_rect(fill = "transparent"),
@@ -1288,10 +1331,10 @@ growth_juju_clone <- ggplot(transform(growth_plotData_0Cu,
                                 panel.background = element_rect(fill = "transparent",colour = NA),
                                 plot.background = element_rect(fill = "transparent",colour = NA), 
                                 axis.line = element_line(size = 1),
-                                axis.title.x = element_text(size=12, family='Arial'),
-                                axis.title.y = element_text(size=12, family='Arial'),
+                                axis.title.x = element_text(size=12),
+                                axis.title.y = element_text(size=12),
                                 axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                                axis.text = element_text(size=12, family='Arial'),
+                                axis.text = element_text(size=12),
                                 strip.text.x = element_text(size =10, color = "black"),
                                 strip.text.y = element_text(size =10, color = "black"),
                                 panel.spacing.x = unit(4, "mm"),
@@ -1303,7 +1346,7 @@ growth_copper_clone <- ggplot(transform(growth_plotData_0JuJu,
                           geom_line(aes(linetype=cloneID),size = 1) + 
                           scale_linetype_manual(values=c("twodash","twodash","twodash","solid","solid","solid")) +
                           scale_color_viridis(discrete = TRUE, option = "C")+
-                          labs(y=expression(Growth~rate[maturity]), x=expression(copper~(mg~L^{-1}))) +
+                          labs(y=expression(growth~rate~(mm~d^{-1})), x=expression(copper~(µg~L^{-1}))) +
                           scale_x_continuous(breaks=c(0,5,10,15,20,25)) +
                           ylim(0.05,0.21) +
                           theme(rect = element_rect(fill = "transparent"),
@@ -1312,10 +1355,10 @@ growth_copper_clone <- ggplot(transform(growth_plotData_0JuJu,
                                 panel.background = element_rect(fill = "transparent",colour = NA),
                                 plot.background = element_rect(fill = "transparent",colour = NA), 
                                 axis.line = element_line(size = 1),
-                                axis.title.x = element_text(size=12, family='Arial'),
-                                axis.title.y = element_text(size=12, family='Arial'),
+                                axis.title.x = element_text(size=12),
+                                axis.title.y = element_text(size=12),
                                 axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                                axis.text = element_text(size=12, family='Arial'),
+                                axis.text = element_text(size=12),
                                 strip.text.x = element_text(size =10, color = "black"),
                                 strip.text.y = element_text(size =10, color = "black"),
                                 panel.spacing.x = unit(4, "mm"),
@@ -1325,18 +1368,24 @@ growth_copper_clone <- ggplot(transform(growth_plotData_0JuJu,
 
 ## GROWTHRATE MATURITY lmer() plot ---------------------------------------------------
 
-patchwork_plots_growth_model <- growth_average / (growth_Mod_average | growth_Mod_byClone) / (growth_juju_clone | growth_copper_clone | guide_area() )
+patchwork_plots_growth_model <- growth_average / (growth_Mod_average | growth_Mod_byClone) / (growth_juju_clone | growth_copper_clone )
 
+# patchwork_plots_growth_model + 
+#   plot_annotation(
+#     title = 'growth rate',
+#     subtitle = '(A) effect of Cu and Juju on genetically distinct clones (B) average effect of Cu and JuJu among clones, (C) clone specific effects of Cu and JuJu, 
+#     (D) effect of JuJu among clones, (E) effect of Cu among clones', 
+#     tag_levels = 'A') + 
+#   plot_layout(nrow=3, height = c(3,6,3), guides = 'collect') & theme(legend.position = "right")
+# 
+# ggsave("patchwork_plots_growth_model.tiff", dpi = 300, device = "tiff")  # Saving 14.3 x 11 in image
+
+setEPS()
+postscript("SFig3.eps", colormodel = "RGB", width = 13, height = 10)
 patchwork_plots_growth_model + 
-  plot_annotation(
-    title = 'growth rate',
-    subtitle = '(A) effect of Cu and Juju on genetically distinct clones (B) average effect of Cu and JuJu among clones, (C) clone specific effects of Cu and JuJu, 
-    (D) effect of JuJu among clones, (E) effect of Cu among clones', 
-    tag_levels = 'A') + 
-  plot_layout(nrow=3, height = c(3,6,3), guides = 'collect') & theme(legend.position = "right")
-
-ggsave("patchwork_plots_growth_model.tiff", dpi = 300, device = "tiff")  # Saving 14.3 x 11 in image
-
+  plot_annotation(tag_levels = 'A') + 
+  plot_layout(nrow=3, height = c(5,10,5), guides = 'collect') & theme(legend.position = "right")
+dev.off()
 
 
 ## AGE @ MATURITY lmer() ---------------------------------------------------
@@ -1426,17 +1475,17 @@ age_Mod_average <- ggplot(age_plotData, aes(x = juju, y = copper))+
                         geom_raster(aes(fill = fixed_effect), interpolate = TRUE)+
                         scale_fill_continuous(type = "viridis")+
                         scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
-                        labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+                        labs(y=expression(copper~(µg~L^{-1})), x=expression(predator~cue~(µl~ml^{-1}))) +
                         theme(rect = element_rect(fill = "transparent"),
                               panel.grid.major = element_line(colour = "grey70", size=0.25),
                               panel.grid.minor = element_line(colour = "grey90", size=0.1),
                               panel.background = element_rect(fill = "transparent",colour = NA),
                               plot.background = element_rect(fill = "transparent",colour = NA), 
                               axis.line = element_line(size = 1),
-                              axis.title.x = element_text(size=12, family='Arial'),
-                              axis.title.y = element_text(size=12, family='Arial'),
+                              axis.title.x = element_text(size=12),
+                              axis.title.y = element_text(size=12),
                               axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                              axis.text = element_text(size=12, family='Arial'),
+                              axis.text = element_text(size=12),
                               strip.text.x = element_text(size =10, color = "black"),
                               strip.text.y = element_text(size =10, color = "black"),
                               panel.spacing.x = unit(4, "mm"),
@@ -1448,7 +1497,7 @@ age_Mod_byClone <- ggplot(transform(age_plotData,
                       geom_raster(aes(fill = clone_effect), interpolate = TRUE)+
                       scale_fill_continuous(type = "viridis")+
                       scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
-                      labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+                      labs(y=expression(copper~(µg~L^{-1})), x=expression(predator~cue~(µl~ml^{-1}))) +
                       facet_wrap(~cloneID)+
                       theme(rect = element_rect(fill = "transparent"),
                             panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -1456,10 +1505,10 @@ age_Mod_byClone <- ggplot(transform(age_plotData,
                             panel.background = element_rect(fill = "transparent",colour = NA),
                             plot.background = element_rect(fill = "transparent",colour = NA), 
                             axis.line = element_line(size = 1),
-                            axis.title.x = element_text(size=12, family='Arial'),
-                            axis.title.y = element_text(size=12, family='Arial'),
+                            axis.title.x = element_text(size=12),
+                            axis.title.y = element_text(size=12),
                             axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                            axis.text = element_text(size=12, family='Arial'),
+                            axis.text = element_text(size=12),
                             strip.text.x = element_text(size =10, color = "black"),
                             strip.text.y = element_text(size =10, color = "black"),
                             panel.spacing.x = unit(4, "mm"),
@@ -1472,7 +1521,7 @@ age_average <- ggplot(transform(AgeDat.ag,
                     geom_line(aes(linetype=cloneID),size = 0.7) +
                     scale_linetype_manual(values=c("twodash","twodash","twodash","solid","solid","solid")) +
                     scale_color_viridis(discrete = TRUE, option = "C")+
-                    labs(y=expression(Age[maturity]~(days)), x=expression(juju~(µl~ml^{-1}))) +
+                    labs(y=expression(Age[maturity]~(days)), x=expression(predator~cue~(µl~ml^{-1}))) +
                     scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                     ylim(4,13) +
                     facet_wrap(~copper, nrow = 1) +
@@ -1482,10 +1531,10 @@ age_average <- ggplot(transform(AgeDat.ag,
                           panel.background = element_rect(fill = "transparent",colour = NA),
                           plot.background = element_rect(fill = "transparent",colour = NA), 
                           axis.line = element_line(size = 1),
-                          axis.title.x = element_text(size=12, family='Arial'),
-                          axis.title.y = element_text(size=12, family='Arial'),
+                          axis.title.x = element_text(size=12),
+                          axis.title.y = element_text(size=12),
                           axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                          axis.text = element_text(size=12, family='Arial'),
+                          axis.text = element_text(size=12),
                           strip.text.x = element_text(size =10, color = "black"),
                           strip.text.y = element_text(size =10, color = "black"),
                           panel.spacing.x = unit(4, "mm"),
@@ -1527,7 +1576,7 @@ age_juju_clone <- ggplot(transform(age_plotData_0Cu,
                       geom_line(aes(linetype=cloneID),size = 1) + 
                       scale_linetype_manual(values=c("twodash","twodash","twodash","solid","solid","solid")) +
                       scale_color_viridis(discrete = TRUE, option = "C")+
-                      labs(y=expression(Age[maturity]~(days)), x=expression(juju~(µl~ml^{-1}))) +
+                      labs(y=expression(Age[maturity]~(days)), x=expression(predator~cue~(µl~ml^{-1}))) +
                       scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                       ylim(4,13) +
                       theme(rect = element_rect(fill = "transparent"),
@@ -1536,10 +1585,10 @@ age_juju_clone <- ggplot(transform(age_plotData_0Cu,
                             panel.background = element_rect(fill = "transparent",colour = NA),
                             plot.background = element_rect(fill = "transparent",colour = NA), 
                             axis.line = element_line(size = 1),
-                            axis.title.x = element_text(size=12, family='Arial'),
-                            axis.title.y = element_text(size=12, family='Arial'),
+                            axis.title.x = element_text(size=12),
+                            axis.title.y = element_text(size=12),
                             axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                            axis.text = element_text(size=12, family='Arial'),
+                            axis.text = element_text(size=12),
                             strip.text.x = element_text(size =10, color = "black"),
                             strip.text.y = element_text(size =10, color = "black"),
                             panel.spacing.x = unit(4, "mm"),
@@ -1551,7 +1600,7 @@ age_copper_clone <- ggplot(transform(age_plotData_0JuJu,
                         geom_line(aes(linetype=cloneID),size = 1) + 
                         scale_linetype_manual(values=c("twodash","twodash","twodash","solid","solid","solid")) +
                         scale_color_viridis(discrete = TRUE, option = "C")+
-                        labs(y=expression(Age[maturity]~(days)), x=expression(copper~(mg~L^{-1}))) +
+                        labs(y=expression(Age[maturity]~(days)), x=expression(copper~(µg~L^{-1}))) +
                         scale_x_continuous(breaks=c(0,5,10,15,20,25)) +
                         ylim(4,13) +
                         theme(rect = element_rect(fill = "transparent"),
@@ -1560,10 +1609,10 @@ age_copper_clone <- ggplot(transform(age_plotData_0JuJu,
                               panel.background = element_rect(fill = "transparent",colour = NA),
                               plot.background = element_rect(fill = "transparent",colour = NA), 
                               axis.line = element_line(size = 1),
-                              axis.title.x = element_text(size=12, family='Arial'),
-                              axis.title.y = element_text(size=12, family='Arial'),
+                              axis.title.x = element_text(size=12),
+                              axis.title.y = element_text(size=12),
                               axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                              axis.text = element_text(size=12, family='Arial'),
+                              axis.text = element_text(size=12),
                               strip.text.x = element_text(size =10, color = "black"),
                               strip.text.y = element_text(size =10, color = "black"),
                               panel.spacing.x = unit(4, "mm"),
@@ -1573,18 +1622,24 @@ age_copper_clone <- ggplot(transform(age_plotData_0JuJu,
 
 ## AGE @ MATURITY lmer() plot ---------------------------------------------------
 
-patchwork_plots_age_model <- age_average / (age_Mod_average | age_Mod_byClone) / (age_juju_clone | age_copper_clone | guide_area() )
+patchwork_plots_age_model <- age_average / (age_Mod_average | age_Mod_byClone) / (age_juju_clone | age_copper_clone )
 
+# patchwork_plots_age_model + 
+#   plot_annotation(
+#     title = 'age @ maturity',
+#     subtitle = '(A) effect of Cu and Juju on genetically distinct clones (B) average effect of Cu and JuJu among clones, (C) clone specific effects of Cu and JuJu, 
+#     (D) effect of JuJu among clones, (E) effect of Cu among clones', 
+#     tag_levels = 'A') + 
+#   plot_layout(nrow=3, height = c(3,6,3), guides = 'collect') & theme(legend.position = "right")
+# 
+# ggsave("patchwork_plots_age_model.tiff", dpi = 300, device = "tiff")  # Saving 14.3 x 11 in image
+
+setEPS()
+postscript("SFig4.eps", colormodel = "RGB", width = 13, height = 10)
 patchwork_plots_age_model + 
-  plot_annotation(
-    title = 'age @ maturity',
-    subtitle = '(A) effect of Cu and Juju on genetically distinct clones (B) average effect of Cu and JuJu among clones, (C) clone specific effects of Cu and JuJu, 
-    (D) effect of JuJu among clones, (E) effect of Cu among clones', 
-    tag_levels = 'A') + 
-  plot_layout(nrow=3, height = c(3,6,3), guides = 'collect') & theme(legend.position = "right")
-
-ggsave("patchwork_plots_age_model.tiff", dpi = 300, device = "tiff")  # Saving 14.3 x 11 in image
-
+  plot_annotation(tag_levels = 'A') + 
+  plot_layout(nrow=3, height = c(5,10,5), guides = 'collect') & theme(legend.position = "right")
+dev.off()
 
 
 ## SURVIVAL ANALYSIS ---------------------------------------------------
@@ -1595,19 +1650,18 @@ survival <- AllData[, c("clone","clone_type","cloneID","juju","copper","rep","su
 ## Cox Hazard Model (use 'coxph' when no random effects, and 'coxme' when using random effects)
 
 ## clone as random effect
-mod1 <- coxme(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper + (1|clone), data = na.omit(survival))
+mod1 <- coxme(Surv(survival_time,alive_dead) ~ juju*copper + (1|cloneID), data = na.omit(survival))
 summary(mod1)
 confint(mod1)
-Anova(mod1, type = "II") # strong copper effect, small juju*copper interaction effect
+car::Anova(mod1, type = "II") # strong copper effect, small juju*copper interaction effect
 
 ##clone as frailty term 
-mod2 <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper + frailty(clone), data = na.omit(survival))
+mod2 <- coxph(Surv(survival_time,alive_dead) ~ juju*copper + frailty(cloneID), data = na.omit(survival))
 summary(mod2)
 confint(mod2)
 Anova(mod2, type = "II")
 
-anova(mod1, mod2)  # frailty term model slightly better fit
-
+anova(mod1, mod2)  # frailty term model better fit
 
 # expand grid
 surv_newX <- expand.grid(
@@ -1621,143 +1675,46 @@ surv_fixed_effects_lp <- predict(mod2, type = "lp", newdata = surv_newX, re.form
 surv_fixed_effects_risk <- predict(mod2, type = "risk", newdata = surv_newX, re.form = NA)  # risk factor 
 
 # housekeeping
-surv_fixed_plotData <- data.table(surv_newX, fixed_effect_lp=surv_fixed_effects_lp, fixed_effect_risk=surv_fixed_effects_risk)
+surv_fixed_plotData <- data.table(surv_newX, fixed_effect_lp=surv_fixed_effects_lp, fixed_effect=surv_fixed_effects_risk)
 
 
+# random effects
+d <- datadist(na.omit(survival))
+options(datadist = "d")
 
-####
-modX <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper + strata(clone), data = na.omit(survival))
-survfit(modX, newdata = surv_newX)
+# model (use clone as a fixed effect as we had issues extracting from frailty model or strata model)
+mod3 <- coxph(Surv(survival_time,alive_dead) ~ juju*copper+cloneID, data = na.omit(survival))
+Anova(mod3, type = "II")
+confint(mod3)
 
+mod4 <- coxph(Surv(survival_time,alive_dead) ~ juju*copper*cloneID, data = na.omit(survival))
+Anova(mod4, type = "II")
+confint(mod4)
 
+anova(mod3, mod4)  # mod 4 better fit (use only for plots, but mod2 for stats extraction << more or less the same...)
 
-
-## ISSUE (!!)
-# How can one extract predicitons from frailty term model (model 1) in order to get clone-specific effects???
-# Based on https://stat.ethz.ch/R-manual/R-devel/library/survival/html/predict.coxph.html this might not be possible:
-# "Models that contain a frailty term are a special case: due to the technical difficulty, 
-# when there is a newdata argument the predictions will always be for a random effect of zero."
-
-# Potential solution - use model w/ copper, juju and interaction term separately for each clone and extract predictions
-
-## clone-specific effects 
-# C14
-mod3_C14 <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "high_C14"]))
-plot_model(mod3_C14, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
-
-surv_newX_C14 <- expand.grid(
-  juju = seq(0,0.5,length = 10),
-  copper = seq(0,25, length = 10),  
-  cloneID = "high_C14")
-
-surv_C14_effects_lp <- predict(mod3_C14, type = "lp", newdata = surv_newX_C14, re.form = NA)  # linear prediction
-surv_C14_effects_risk <- predict(mod3_C14, type = "risk", newdata = surv_newX_C14, re.form = NA)  # risk factor 
+surv_clone_effects_lp <- predict(mod4, type = "lp", newdata = surv_newX)
+surv_clone_effects_risk <- predict(mod4, type = "risk", newdata = surv_newX)
 
 # housekeeping
-surv_plotData_C14 <- data.table(surv_newX_C14, clone_effect_lp=surv_C14_effects_lp, clone_effect_risk=surv_C14_effects_risk)
-
-
-# Chard
-mod3_Chard <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "high_Chard"]))
-plot_model(mod3_Chard, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
-
-surv_newX_Chard <- expand.grid(
-  juju = seq(0,0.5,length = 10),
-  copper = seq(0,25, length = 10),  
-  cloneID = "high_Chard")
-
-surv_Chard_effects_lp <- predict(mod3_Chard, type = "lp", newdata = surv_newX_Chard, re.form = NA)  # linear prediction
-surv_Chard_effects_risk <- predict(mod3_Chard, type = "risk", newdata = surv_newX_Chard, re.form = NA)  # risk factor 
-
-# housekeeping
-surv_plotData_Chard <- data.table(surv_newX_Chard, clone_effect_lp=surv_Chard_effects_lp, clone_effect_risk=surv_Chard_effects_risk)
-
-
-# LD33
-mod3_LD33 <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "high_LD33"]))
-plot_model(mod3_LD33, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
-
-surv_newX_LD33 <- expand.grid(
-  juju = seq(0,0.5,length = 10),
-  copper = seq(0,25, length = 10),  
-  cloneID = "high_LD33")
-
-surv_LD33_effects_lp <- predict(mod3_LD33, type = "lp", newdata = surv_newX_LD33, re.form = NA)  # linear prediction
-surv_LD33_effects_risk <- predict(mod3_LD33, type = "risk", newdata = surv_newX_LD33, re.form = NA)  # risk factor 
-
-# housekeeping
-surv_plotData_LD33 <- data.table(surv_newX_LD33, clone_effect_lp=surv_LD33_effects_lp, clone_effect_risk=surv_LD33_effects_risk)
-
-
-# D86A
-mod3_D86A <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "low_D86A"]))
-plot_model(mod3_D86A, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
-
-surv_newX_D86A <- expand.grid(
-  juju = seq(0,0.5,length = 10),
-  copper = seq(0,25, length = 10),  
-  cloneID = "low_D86A")
-
-surv_D86A_effects_lp <- predict(mod3_D86A, type = "lp", newdata = surv_newX_D86A, re.form = NA)  # linear prediction
-surv_D86A_effects_risk <- predict(mod3_D86A, type = "risk", newdata = surv_newX_D86A, re.form = NA)  # risk factor 
-
-# housekeeping
-surv_plotData_D86A <- data.table(surv_newX_D86A, clone_effect_lp=surv_D86A_effects_lp, clone_effect_risk=surv_D86A_effects_risk)
-
-
-# D87A
-mod3_D87A <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "low_D87A"]))
-plot_model(mod3_D87A, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
-
-surv_newX_D87A <- expand.grid(
-  juju = seq(0,0.5,length = 10),
-  copper = seq(0,25, length = 10),  
-  cloneID = "low_D87A")
-
-surv_D87A_effects_lp <- predict(mod3_D87A, type = "lp", newdata = surv_newX_D87A, re.form = NA)  # linear prediction
-surv_D87A_effects_risk <- predict(mod3_D87A, type = "risk", newdata = surv_newX_D87A, re.form = NA)  # risk factor 
-
-# housekeeping
-surv_plotData_D87A <- data.table(surv_newX_D87A, clone_effect_lp=surv_D87A_effects_lp, clone_effect_risk=surv_D87A_effects_risk)
-
-
-# Cyril
-mod3_Cyril <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "low_Cyril"]))
-plot_model(mod3_Cyril, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
-
-surv_newX_Cyril <- expand.grid(
-  juju = seq(0,0.5,length = 10),
-  copper = seq(0,25, length = 10),  
-  cloneID = "low_Cyril")
-
-surv_Cyril_effects_lp <- predict(mod3_Cyril, type = "lp", newdata = surv_newX_Cyril, re.form = NA)  # linear prediction
-surv_Cyril_effects_risk <- predict(mod3_Cyril, type = "risk", newdata = surv_newX_Cyril, re.form = NA)  # risk factor 
-
-# housekeeping
-surv_plotData_Cyril <- data.table(surv_newX_Cyril, clone_effect_lp=surv_Cyril_effects_lp, clone_effect_risk=surv_Cyril_effects_risk)
-
-
-# combine all clone_effects
-surv_clone_plotData <- as.data.table(rbind(surv_plotData_C14, surv_plotData_Chard, surv_plotData_LD33,
-                                           surv_plotData_D86A, surv_plotData_D87A, surv_plotData_Cyril))
-
+surv_clone_plotData <- data.table(surv_newX, clone_effect_lp=surv_clone_effects_lp, clone_effect=surv_clone_effects_risk)
 
 # plot the average and clone specifics
 surv_Mod_average <- ggplot(surv_fixed_plotData, aes(x = juju, y = copper))+
-                        geom_raster(aes(fill = fixed_effect_risk), interpolate = TRUE)+  # fill = surv_fixed_effects_risk
+                        geom_raster(aes(fill = fixed_effect), interpolate = TRUE)+  # fill = surv_fixed_effects_lp
                         scale_fill_continuous(type = "viridis")+
                         scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
-                        labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+                        labs(y=expression(copper~(µg~L^{-1})), x=expression(predator~cue~(µl~ml^{-1}))) +
                         theme(rect = element_rect(fill = "transparent"),
                               panel.grid.major = element_line(colour = "grey70", size=0.25),
                               panel.grid.minor = element_line(colour = "grey90", size=0.1),
                               panel.background = element_rect(fill = "transparent",colour = NA),
                               plot.background = element_rect(fill = "transparent",colour = NA), 
                               axis.line = element_line(size = 1),
-                              axis.title.x = element_text(size=12, family='Arial'),
-                              axis.title.y = element_text(size=12, family='Arial'),
+                              axis.title.x = element_text(size=12),
+                              axis.title.y = element_text(size=12),
                               axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                              axis.text = element_text(size=12, family='Arial'),
+                              axis.text = element_text(size=12),
                               strip.text.x = element_text(size =10, color = "black"),
                               strip.text.y = element_text(size =10, color = "black"),
                               panel.spacing.x = unit(4, "mm"),
@@ -1766,11 +1723,11 @@ surv_Mod_average <- ggplot(surv_fixed_plotData, aes(x = juju, y = copper))+
 
 surv_Mod_byClone <- ggplot(transform(surv_clone_plotData,
                                      cloneID = factor(cloneID, levels=c('high_C14', 'high_Chard', 'high_LD33', 'low_D86A', 'low_D87A', 'low_Cyril'))), 
-                              aes(x = juju, y = copper, fill = clone_effect_risk))+
+                              aes(x = juju, y = copper, fill = clone_effect))+
                         geom_raster(interpolate=T) +  
                         scale_fill_continuous(type = "viridis") +
                         scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
-                        labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+                        labs(y=expression(copper~(µg~L^{-1})), x=expression(predator~cue~(µl~ml^{-1}))) +
                         facet_wrap(~cloneID, scales = "free")+
                         theme(rect = element_rect(fill = "transparent"),
                               panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -1778,68 +1735,37 @@ surv_Mod_byClone <- ggplot(transform(surv_clone_plotData,
                               panel.background = element_rect(fill = "transparent",colour = NA),
                               plot.background = element_rect(fill = "transparent",colour = NA), 
                               axis.line = element_line(size = 1),
-                              axis.title.x = element_text(size=12, family='Arial'),
-                              axis.title.y = element_text(size=12, family='Arial'),
+                              axis.title.x = element_text(size=12),
+                              axis.title.y = element_text(size=12),
                               axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                              axis.text = element_text(size=12, family='Arial'),
+                              axis.text = element_text(size=12),
                               strip.text.x = element_text(size =10, color = "black"),
                               strip.text.y = element_text(size =10, color = "black"),
                               panel.spacing.x = unit(4, "mm"),
                               panel.spacing.y = unit(1, "mm"))
 
 
-# # alternative plot for clone-specific responses: each panel gets its own colour legend.... (might be handy if we need to plot risk factors - instead of linear predictions)
-# transform(surv_clone_plotData,
-#                             cloneID = factor(cloneID, levels=c('high_C14', 'high_Chard', 'high_LD33', 'low_D86A', 'low_D87A', 'low_Cyril'))) %>%
-#                   
-#                             group_split(cloneID) %>%
-#                   
-#                             map(
-#                               ~ggplot(., aes(juju, copper)) +
-#                                 geom_raster(aes(fill = clone_effect_risk), interpolate = TRUE) +
-#                                 scale_fill_continuous(type = "viridis") +
-#                                 scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
-#                                 labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
-#                                 facet_grid(~ cloneID) +
-#                                 theme(rect = element_rect(fill = "transparent"),
-#                                       panel.grid.major = element_line(colour = "grey70", size=0.25),
-#                                       panel.grid.minor = element_line(colour = "grey90", size=0.1),
-#                                       panel.background = element_rect(fill = "transparent",colour = NA),
-#                                       plot.background = element_rect(fill = "transparent",colour = NA),
-#                                       axis.line = element_line(size = 1),
-#                                       axis.title.x = element_text(size=12, family='Arial'),
-#                                       axis.title.y = element_text(size=12, family='Arial'),
-#                                       axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-#                                       axis.text = element_text(size=12, family='Arial'),
-#                                       strip.text.x = element_text(size =10, color = "black"),
-#                                       strip.text.y = element_text(size =10, color = "black"),
-#                                       panel.spacing.x = unit(4, "mm"),
-#                                       panel.spacing.y = unit(1, "mm"))
-#                   
-#                             ) %>%
-#                             plot_grid()  # can't get this to work: plot_grid(plotlist = ., align = 'hv', ncol = 3)
-
 
 # fix copper and juju to 0 & plot
 surv_juju_clone <- ggplot(transform(surv_clone_plotData[copper == 0], 
                                      cloneID = factor(cloneID, levels=c('high_C14', 'high_Chard', 'high_LD33', 'low_D86A', 'low_D87A', 'low_Cyril'))), 
-                          aes(x = juju, y = clone_effect_risk, group = cloneID, colour = cloneID))+
+                          aes(x = juju, y = clone_effect, group = cloneID, colour = cloneID))+
                       geom_line(aes(linetype=cloneID),size = 1) + 
                       scale_linetype_manual(values=c("twodash","twodash","twodash","solid","solid","solid")) +
                       scale_color_viridis(discrete = TRUE, option = "C")+
-                      labs(y=expression(survival[~risk~factor]), x=expression(juju~(µl~ml^{-1}))) +
+                      labs(y=expression(risk~of~death), x=expression(predator~cue~(µl~ml^{-1}))) +
                       scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
-                      ylim(0,16) +
+                      ylim(0,13) +
                       theme(rect = element_rect(fill = "transparent"),
                             panel.grid.major = element_line(colour = "grey70", size=0.25),
                             panel.grid.minor = element_line(colour = "grey90", size=0.1),
                             panel.background = element_rect(fill = "transparent",colour = NA),
                             plot.background = element_rect(fill = "transparent",colour = NA), 
                             axis.line = element_line(size = 1),
-                            axis.title.x = element_text(size=12, family='Arial'),
-                            axis.title.y = element_text(size=12, family='Arial'),
+                            axis.title.x = element_text(size=12),
+                            axis.title.y = element_text(size=12),
                             axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                            axis.text = element_text(size=12, family='Arial'),
+                            axis.text = element_text(size=12),
                             strip.text.x = element_text(size =10, color = "black"),
                             strip.text.y = element_text(size =10, color = "black"),
                             panel.spacing.x = unit(4, "mm"),
@@ -1848,23 +1774,23 @@ surv_juju_clone <- ggplot(transform(surv_clone_plotData[copper == 0],
 
 surv_copper_clone <- ggplot(transform(surv_clone_plotData[juju == 0], 
                                     cloneID = factor(cloneID, levels=c('high_C14', 'high_Chard', 'high_LD33', 'low_D86A', 'low_D87A', 'low_Cyril'))), 
-                          aes(x = copper, y = clone_effect_risk, group = cloneID, colour = cloneID))+
+                          aes(x = copper, y = clone_effect, group = cloneID, colour = cloneID))+
                       geom_line(aes(linetype=cloneID),size = 1) + 
                       scale_linetype_manual(values=c("twodash","twodash","twodash","solid","solid","solid")) +
                       scale_color_viridis(discrete = TRUE, option = "C")+
-                      labs(y=expression(survival[~risk~factor]), x=expression(copper~(mg~L^{-1}))) +
+                      labs(y=expression(risk~of~death), x=expression(copper~(µg~L^{-1}))) +
                       scale_x_continuous(breaks=c(0,5,10,15,20,25)) +
-                      ylim(0,16) +
+                      ylim(0,13) +
                       theme(rect = element_rect(fill = "transparent"),
                             panel.grid.major = element_line(colour = "grey70", size=0.25),
                             panel.grid.minor = element_line(colour = "grey90", size=0.1),
                             panel.background = element_rect(fill = "transparent",colour = NA),
                             plot.background = element_rect(fill = "transparent",colour = NA), 
                             axis.line = element_line(size = 1),
-                            axis.title.x = element_text(size=12, family='Arial'),
-                            axis.title.y = element_text(size=12, family='Arial'),
+                            axis.title.x = element_text(size=12),
+                            axis.title.y = element_text(size=12),
                             axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                            axis.text = element_text(size=12, family='Arial'),
+                            axis.text = element_text(size=12),
                             strip.text.x = element_text(size =10, color = "black"),
                             strip.text.y = element_text(size =10, color = "black"),
                             panel.spacing.x = unit(4, "mm"),
@@ -1874,16 +1800,141 @@ surv_copper_clone <- ggplot(transform(surv_clone_plotData[juju == 0],
 
 ## SURVIVAL ANALYSIS plot ---------------------------------------------------
 
-patchwork_plots_surv_model <- plot_spacer() / (surv_Mod_average | surv_Mod_byClone) / (surv_juju_clone | surv_copper_clone | guide_area() )
+patchwork_plots_surv_model <- plot_spacer() / (surv_Mod_average | surv_Mod_byClone) / (surv_juju_clone | surv_copper_clone )
 
+# patchwork_plots_surv_model + 
+#   plot_annotation(
+#     title = 'survival up to maturity',
+#     subtitle = '(A) average effect of Cu and JuJu among clones, and (B) clone specific effects of Cu and JuJu, (C) effect of JuJu among clones, (D) effect of Cu among clones', 
+#     tag_levels = 'A') + 
+#   plot_layout(nrow=3, height = c(5,6,3), guides = 'collect') & theme(legend.position = "right")  # note re plotting - increased row height due to plot_spacer()
+# 
+# ggsave("patchwork_plots_surv_model.tiff", dpi = 300, device = "tiff")  # Saving 14.3 x 10.3 in image
+
+setEPS()
+postscript("SFig5.eps", colormodel = "RGB", width = 13, height = 10)
 patchwork_plots_surv_model + 
-  plot_annotation(
-    title = 'survival up to maturity',
-    subtitle = '(A) average effect of Cu and JuJu among clones, and (B) clone specific effects of Cu and JuJu, (C) effect of JuJu among clones, (D) effect of Cu among clones', 
-    tag_levels = 'A') + 
-  plot_layout(nrow=3, height = c(5,6,3), guides = 'collect') & theme(legend.position = "right")  # note re plotting - increased row height due to plot_spacer()
+  plot_annotation(tag_levels = 'A') + 
+  plot_layout(nrow=3, height = c(5,10,5), guides = 'collect') & theme(legend.position = "right")
+dev.off()
 
-ggsave("patchwork_plots_surv_model.tiff", dpi = 300, device = "tiff")  # Saving 14.3 x 11 in image
+
+
+
+
+
+
+#####################################
+#### MAIN EFFECTS - Panels D & E ####
+#####################################
+
+## induction
+ind_mod_JUJU <- lmer(maxInd_total ~ juju + (1|cloneID), data = IndDat_use[copper == 0])
+
+summary(ind_mod_JUJU)
+Confint(ind_mod_JUJU)  
+Anova(ind_mod_JUJU, type = "II",  test = "F")
+
+# F = 38.397, df = 1,103, p = 1.203e-08
+# juju has strong positive effect
+
+
+ind_mod_CU <- lmer(maxInd_total ~ copper + (1|cloneID), data = IndDat_use[juju == 0])
+
+summary(ind_mod_CU)
+Confint(ind_mod_CU)  
+Anova(ind_mod_CU, type = "II",  test = "F")
+
+# F = 1.254, df = 1,113, p = 0.2653
+# no evidence that copper has an effect
+
+
+## size
+size_mod_JUJU <- lmer(size_mat ~ juju + (1|cloneID), data = SizeDat_use[copper == 0])
+
+summary(size_mod_JUJU)
+Confint(size_mod_JUJU)  
+Anova(size_mod_JUJU, type = "II",  test = "F")
+
+# F = 7.4174, df = 1,88, p = 0.007786
+# juju has positive effect
+
+
+size_mod_CU <- lmer(size_mat ~ copper + (1|cloneID), data = SizeDat_use[juju == 0])
+
+summary(size_mod_CU)
+Confint(size_mod_CU)  
+Anova(size_mod_CU, type = "II",  test = "F")
+
+# F = 34.009, df = 1,85, p = 9.734e-08
+# copper has strong negative effect
+
+
+## GR
+growth_mod_JUJU <- lmer(growth_mat ~ juju + (1|cloneID), data = GrowthDat_use[copper == 0])
+
+summary(growth_mod_JUJU)
+Confint(growth_mod_JUJU)  
+Anova(growth_mod_JUJU, type = "II",  test = "F")
+
+# F = 1.8543, df = 1,88, p = 0.1767
+# no evidence that juju has an effect
+
+
+growth_mod_CU <- lmer(growth_mat ~ copper + (1|cloneID), data = GrowthDat_use[juju == 0])
+
+summary(growth_mod_CU)
+Confint(growth_mod_CU)  
+Anova(growth_mod_CU, type = "II",  test = "F")
+
+# F = 75.549, df = 1,84, p = 2.467e-13
+# copper has strong negative effect
+
+
+## age
+age_mod_JUJU <- lmer(age_mat ~ juju + (1|cloneID), data = AgeDat_use[copper == 0])
+
+summary(age_mod_JUJU)
+Confint(age_mod_JUJU)  
+Anova(age_mod_JUJU, type = "II",  test = "F")
+
+# F = 0.925, df = 1,89, p = 0.3388
+# no evidence that juju has an effect
+
+
+age_mod_CU <- lmer(age_mat ~ copper + (1|cloneID), data = AgeDat_use[juju == 0])
+
+summary(age_mod_CU)
+Confint(age_mod_CU)  
+Anova(age_mod_CU, type = "II",  test = "F")
+
+# F = 97.357, df = 1,84, p = 1.067e-15
+# copper has strong positive effect
+
+
+## survival
+survival <- AllData[, c("clone","clone_type","cloneID","juju","copper","rep","survival_time","alive_dead")]
+## survival data based on 'maturity data', i.e. data was recorded until animals were mature; 0 = alive, 1 = dead; 
+
+surv_mod_JUJU <- coxph(Surv(survival_time,alive_dead) ~ juju + frailty(cloneID), data = na.omit(survival[copper == 0]))
+
+summary(surv_mod_JUJU)
+Confint(surv_mod_JUJU)  
+Anova(surv_mod_JUJU, type = "II")
+
+# Chisq = 5.0217, df = 1,89, p = 0.02503
+# juju has small positive effect (increase of risk score, thus higher probability of death)
+
+
+surv_mod_CU <- coxph(Surv(survival_time,alive_dead) ~ copper + frailty(cloneID), data = na.omit(survival[juju == 0]))
+
+summary(surv_mod_CU)
+Confint(surv_mod_CU)  
+Anova(surv_mod_CU, type = "II")
+
+# Chisq = 46.430, df = 1, p = 9.496e-12
+# copper has strong positive effect (increase of risk score, thus higher probability of death)
+
 
 
 
@@ -1893,13 +1944,13 @@ ggsave("patchwork_plots_surv_model.tiff", dpi = 300, device = "tiff")  # Saving 
 #### CONTRASTING LOW vs HIGH ####
 #################################
 
-## INDUCTION lmer() extended ---------------------------------------------------
+## INDUCTION lm() extended ---------------------------------------------------
 # maximal induction across all instars (including first instar, w/ induction score == pedestal + nteeth)
 
 # The full RSM model
 ind_mod_full <- lm(maxInd_total ~ copper + I(copper^2) + juju + I(juju^2) + copper*juju*clone_type, data = IndDat_use)
 Anova(ind_mod_full, type = "II", test = "F") # strong effects: juju, juju^2, clone_type, copper:clone_type, juju:clone_type
-Confint(ind_mod_full)  # no evidence for 2nd order copper in coefficient
+Confint(ind_mod_full)  # no evidence for 2nd order copper in coefficient (if any at all)
 
 # Linear Copper (no polynomial)
 ind_mod_copper_linear <- lm(maxInd_total ~ copper + juju + I(juju^2) + copper*juju*clone_type, data = IndDat_use)
@@ -1915,16 +1966,10 @@ Confint(ind_mod_copper_linear_noInt) #
 
 anova(ind_mod_copper_linear, ind_mod_copper_linear_noInt)  # no difference, i.e. loss of term is justified by likelihood ratio test
 
-# No Copper model 
-ind_mod_no_copper <- lm(maxInd_total ~ juju + I(juju^2) + juju*clone_type, data = IndDat_use)
-Anova(ind_mod_no_copper, type = "II", test = "F") # 
-Confint(ind_mod_no_copper) # 
-
-anova(ind_mod_copper_linear_noInt, ind_mod_no_copper)  # loss of term is NOT justified by likelihood ratio test; i.e. use linear copper & no interaction model (as before)
 
 # MODEL to use: ind_mod_copper_linear_noInt
 summary(ind_mod_copper_linear_noInt)
-Anova(ind_mod_copper_linear_noInt, type = "II") # Type II ANOVA using car with Wald test
+Anova(ind_mod_copper_linear_noInt, type = "II") 
 Confint(ind_mod_copper_linear_noInt) 
 
 
@@ -1948,7 +1993,7 @@ ind_Mod_average <- ggplot(ind_plotData, aes(x = juju, y = copper))+
                           geom_raster(aes(fill = fixed_effect), interpolate = TRUE)+
                           scale_fill_continuous(type = "viridis")+
                           scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
-                          labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+                          labs(y=expression(copper~(µg~L^{-1})), x=expression(predator~cue~(µl~ml^{-1}))) +
                           facet_wrap(~clone_type) +
                           theme(rect = element_rect(fill = "transparent"),
                                 panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -1956,10 +2001,10 @@ ind_Mod_average <- ggplot(ind_plotData, aes(x = juju, y = copper))+
                                 panel.background = element_rect(fill = "transparent",colour = NA),
                                 plot.background = element_rect(fill = "transparent",colour = NA), 
                                 axis.line = element_line(size = 1),
-                                axis.title.x = element_text(size=12, family='Arial'),
-                                axis.title.y = element_text(size=12, family='Arial'),
+                                axis.title.x = element_text(size=12),
+                                axis.title.y = element_text(size=12),
                                 axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                                axis.text = element_text(size=12, family='Arial'),
+                                axis.text = element_text(size=12),
                                 strip.text.x = element_text(size =10, color = "black"),
                                 strip.text.y = element_text(size =10, color = "black"),
                                 panel.spacing.x = unit(4, "mm"),
@@ -1970,7 +2015,7 @@ ind_juju_clone <- ggplot(ind_plotData[copper == 0], aes(x = juju, y = fixed_effe
                           geom_line(aes(linetype=clone_type),size = 1) + 
                           scale_linetype_manual(values=c("twodash","twodash")) +
                           scale_color_manual(values=c("#000000","#FF0000"))+
-                          labs(y=expression(mean~induction[max]), x=expression(juju~(µl~ml^{-1}))) +
+                          labs(y=expression(mean~induction[max]), x=expression(predator~cue~(µl~ml^{-1}))) +
                           scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                           ylim(0,105) +
                           theme(rect = element_rect(fill = "transparent"),
@@ -1979,10 +2024,10 @@ ind_juju_clone <- ggplot(ind_plotData[copper == 0], aes(x = juju, y = fixed_effe
                                 panel.background = element_rect(fill = "transparent",colour = NA),
                                 plot.background = element_rect(fill = "transparent",colour = NA), 
                                 axis.line = element_line(size = 1),
-                                axis.title.x = element_text(size=12, family='Arial'),
-                                axis.title.y = element_text(size=12, family='Arial'),
+                                axis.title.x = element_text(size=12),
+                                axis.title.y = element_text(size=12),
                                 axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                                axis.text = element_text(size=12, family='Arial'),
+                                axis.text = element_text(size=12),
                                 strip.text.x = element_text(size =10, color = "black"),
                                 strip.text.y = element_text(size =10, color = "black"),
                                 panel.spacing.x = unit(4, "mm"),
@@ -1993,7 +2038,7 @@ ind_copper_clone <- ggplot(ind_plotData[juju == 0], aes(x = copper, y = fixed_ef
                             geom_line(aes(linetype=clone_type),size = 1) +  
                             scale_linetype_manual(values=c("twodash","twodash")) +
                             scale_color_manual(values=c("#000000","#FF0000"))+
-                            labs(y=expression(mean~induction[max]), x=expression(copper~(mg~L^{-1}))) +
+                            labs(y=expression(mean~induction[max]), x=expression(copper~(µg~L^{-1}))) +
                             scale_x_continuous(breaks=c(0,5,10,15,20,25)) +
                             ylim(0,105) +
                             theme(rect = element_rect(fill = "transparent"),
@@ -2002,31 +2047,37 @@ ind_copper_clone <- ggplot(ind_plotData[juju == 0], aes(x = copper, y = fixed_ef
                                   panel.background = element_rect(fill = "transparent",colour = NA),
                                   plot.background = element_rect(fill = "transparent",colour = NA), 
                                   axis.line = element_line(size = 1),
-                                  axis.title.x = element_text(size=12, family='Arial'),
-                                  axis.title.y = element_text(size=12, family='Arial'),
+                                  axis.title.x = element_text(size=12),
+                                  axis.title.y = element_text(size=12),
                                   axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                                  axis.text = element_text(size=12, family='Arial'),
+                                  axis.text = element_text(size=12),
                                   strip.text.x = element_text(size =10, color = "black"),
                                   strip.text.y = element_text(size =10, color = "black"),
                                   panel.spacing.x = unit(4, "mm"),
                                   panel.spacing.y = unit(1, "mm"))
 
 
-## INDUCTION lmer() extended plot ---------------------------------------------------
+## INDUCTION lm() extended plot ---------------------------------------------------
 
 patchwork_plots_induction_model_HvsL <- ind_Mod_average  / (ind_juju_clone | ind_copper_clone ) 
 
+# patchwork_plots_induction_model_HvsL + 
+#   plot_annotation(
+#     title = 'maximal induction @ days 1-4',
+#     subtitle = '(A) average effect of Cu and JuJu among clone types, 
+# (B) effect of JuJu among clone types, 
+# (C) effect of Cu among clone types', 
+#     tag_levels = 'A') + 
+#   plot_layout(nrow=2, height = c(6,3), guides = 'collect') & theme(legend.position = "right")
+# 
+# ggsave("patchwork_plots_induction_model_HvsL.tiff", dpi = 300, device = "tiff")  # Saving 6.21 x 6.89 in image
+
+setEPS()
+postscript("Fig2.eps", colormodel = "RGB", width = 6.2, height = 6.9)
 patchwork_plots_induction_model_HvsL + 
-  plot_annotation(
-    title = 'maximal induction @ days 1-4',
-    subtitle = '(A) average effect of Cu and JuJu among clone types, 
-(B) effect of JuJu among clone types, 
-(C) effect of Cu among clone types', 
-    tag_levels = 'A') + 
-  plot_layout(nrow=2, height = c(6,3), guides = 'collect') & theme(legend.position = "right")
-
-ggsave("patchwork_plots_induction_model_HvsL.tiff", dpi = 300, device = "tiff")  # Saving 6.21 x 6.89 in image
-
+  plot_annotation(tag_levels = 'A') + 
+  plot_layout(nrow=2, height = c(6,3), guides = 'collect') & theme(legend.position = "bottom")
+dev.off()
 
 
 ## SIZE @ MATURITY lm() extended ---------------------------------------------------
@@ -2039,14 +2090,14 @@ Confint(size_mod_full) # no evidence for 2nd order copper in coefficient, and li
 # Linear Copper (no polynomial)
 size_mod_copper_linear <- lm(size_mat ~ copper + juju + I(juju^2) + copper*juju*clone_type, data = SizeDat_use)
 Anova(size_mod_copper_linear, type = "II", test = "F") # (strong) effects: copper, juju, juju^2, clone_type, copper:juju, copper:clone_type
-Confint(size_mod_copper_linear) # no evidence for copper:juju interaction...
+Confint(size_mod_copper_linear) # no evidence for copper:juju interaction
 
 anova(size_mod_full, size_mod_copper_linear)  # no difference, i.e. loss of term is justified by likelihood ratio test
 
 # Linear Copper and no interaction of copper and juju (but interaction terms with clone_types)
 size_mod_copper_linear_noInt <- lm(size_mat ~ copper + juju + I(juju^2) + copper*clone_type + juju*clone_type, data = SizeDat_use)
 Anova(size_mod_copper_linear_noInt, type = "II", test = "F") # (strong) effects: copper, juju, clone_type, copper:clone_type
-Confint(size_mod_copper_linear_noInt) # # no evidence for 2nd order juju in coefficient anymore...
+Confint(size_mod_copper_linear_noInt) # no evidence for 2nd order juju in coefficient anymore...
 
 anova(size_mod_copper_linear, size_mod_copper_linear_noInt)  # no difference, i.e. loss of term is justified by likelihood ratio test (but marginal so...)
 
@@ -2059,7 +2110,7 @@ anova(size_mod_copper_linear_noInt, size_mod_copperANDjuju_linear_noInt)  # no d
 
 # MODEL to use: size_mod_copperANDjuju_linear_noInt
 summary(size_mod_copperANDjuju_linear_noInt)
-Anova(size_mod_copperANDjuju_linear_noInt, type = "II") # Type II ANOVA using car with Wald test
+Anova(size_mod_copperANDjuju_linear_noInt, type = "II") 
 Confint(size_mod_copperANDjuju_linear_noInt) 
 
 
@@ -2082,7 +2133,7 @@ size_Mod_average <- ggplot(size_plotData, aes(x = juju, y = copper))+
                           geom_raster(aes(fill = fixed_effect), interpolate = TRUE)+
                           scale_fill_continuous(type = "viridis")+
                           scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
-                          labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+                          labs(y=expression(copper~(µg~L^{-1})), x=expression(predator~cue~(µl~ml^{-1}))) +
                           facet_wrap(~clone_type) +
                           theme(rect = element_rect(fill = "transparent"),
                                 panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -2090,10 +2141,10 @@ size_Mod_average <- ggplot(size_plotData, aes(x = juju, y = copper))+
                                 panel.background = element_rect(fill = "transparent",colour = NA),
                                 plot.background = element_rect(fill = "transparent",colour = NA), 
                                 axis.line = element_line(size = 1),
-                                axis.title.x = element_text(size=12, family='Arial'),
-                                axis.title.y = element_text(size=12, family='Arial'),
+                                axis.title.x = element_text(size=12),
+                                axis.title.y = element_text(size=12),
                                 axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                                axis.text = element_text(size=12, family='Arial'),
+                                axis.text = element_text(size=12),
                                 strip.text.x = element_text(size =10, color = "black"),
                                 strip.text.y = element_text(size =10, color = "black"),
                                 panel.spacing.x = unit(4, "mm"),
@@ -2104,7 +2155,7 @@ size_juju_clone <- ggplot(size_plotData[copper == 0], aes(x = juju, y = fixed_ef
                           geom_line(aes(linetype=clone_type),size = 1) + 
                           scale_linetype_manual(values=c("twodash","twodash")) +
                           scale_color_manual(values=c("#000000","#FF0000"))+
-                          labs(y=expression(size[maturity]), x=expression(juju~(µl~ml^{-1}))) +
+                          labs(y=expression(size[maturity]~(mm)), x=expression(predator~cue~(µl~ml^{-1}))) +
                           scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                           ylim(1.3,2.3) +
                           theme(rect = element_rect(fill = "transparent"),
@@ -2113,10 +2164,10 @@ size_juju_clone <- ggplot(size_plotData[copper == 0], aes(x = juju, y = fixed_ef
                                 panel.background = element_rect(fill = "transparent",colour = NA),
                                 plot.background = element_rect(fill = "transparent",colour = NA), 
                                 axis.line = element_line(size = 1),
-                                axis.title.x = element_text(size=12, family='Arial'),
-                                axis.title.y = element_text(size=12, family='Arial'),
+                                axis.title.x = element_text(size=12),
+                                axis.title.y = element_text(size=12),
                                 axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                                axis.text = element_text(size=12, family='Arial'),
+                                axis.text = element_text(size=12),
                                 strip.text.x = element_text(size =10, color = "black"),
                                 strip.text.y = element_text(size =10, color = "black"),
                                 panel.spacing.x = unit(4, "mm"),
@@ -2127,7 +2178,7 @@ size_copper_clone <- ggplot(size_plotData[juju == 0], aes(x = copper, y = fixed_
                           geom_line(aes(linetype=clone_type),size = 1) +  
                           scale_linetype_manual(values=c("twodash","twodash")) +
                           scale_color_manual(values=c("#000000","#FF0000"))+
-                          labs(y=expression(size[maturity]), x=expression(copper~(mg~L^{-1}))) +
+                          labs(y=expression(size[maturity]~(mm)), x=expression(copper~(µg~L^{-1}))) +
                           scale_x_continuous(breaks=c(0,5,10,15,20,25)) +
                           ylim(1.3,2.3) +
                           theme(rect = element_rect(fill = "transparent"),
@@ -2136,61 +2187,76 @@ size_copper_clone <- ggplot(size_plotData[juju == 0], aes(x = copper, y = fixed_
                                 panel.background = element_rect(fill = "transparent",colour = NA),
                                 plot.background = element_rect(fill = "transparent",colour = NA), 
                                 axis.line = element_line(size = 1),
-                                axis.title.x = element_text(size=12, family='Arial'),
-                                axis.title.y = element_text(size=12, family='Arial'),
+                                axis.title.x = element_text(size=12),
+                                axis.title.y = element_text(size=12),
                                 axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                                axis.text = element_text(size=12, family='Arial'),
+                                axis.text = element_text(size=12),
                                 strip.text.x = element_text(size =10, color = "black"),
                                 strip.text.y = element_text(size =10, color = "black"),
                                 panel.spacing.x = unit(4, "mm"),
                                 panel.spacing.y = unit(1, "mm"))
 
 
-## SIZE @ MATURITY lmer() extended plot ---------------------------------------------------
+## SIZE @ MATURITY lm() extended plot ---------------------------------------------------
 
 patchwork_plots_size_model_HvsL <- size_Mod_average  / (size_juju_clone | size_copper_clone ) 
 
+# patchwork_plots_size_model_HvsL + 
+#   plot_annotation(
+#     title = 'size @ maturity',
+#     subtitle = '(A) average effect of Cu and JuJu among clone types, 
+#     (B) effect of JuJu among clone types, 
+#     (C) effect of Cu among clone types', 
+#     tag_levels = 'A') + 
+#   plot_layout(nrow=2, height = c(6,3), guides = 'collect') & theme(legend.position = "right")
+# 
+# ggsave("patchwork_plots_sizeMat_model_HvsL.tiff", dpi = 300, device = "tiff")  # Saving 6.21 x 6.89 in image
+
+setEPS()
+postscript("Fig3.eps", colormodel = "RGB", width = 6.2, height = 6.9)
 patchwork_plots_size_model_HvsL + 
-  plot_annotation(
-    title = 'size @ maturity',
-    subtitle = '(A) average effect of Cu and JuJu among clone types, 
-    (B) effect of JuJu among clone types, 
-    (C) effect of Cu among clone types', 
-    tag_levels = 'A') + 
-  plot_layout(nrow=2, height = c(6,3), guides = 'collect') & theme(legend.position = "right")
-
-ggsave("patchwork_plots_sizeMat_model_HvsL.tiff", dpi = 300, device = "tiff")  # Saving 6.21 x 6.89 in image
-
+  plot_annotation(tag_levels = 'A') + 
+  plot_layout(nrow=2, height = c(6,3), guides = 'collect') & theme(legend.position = "bottom")
+dev.off()
 
 
 ## GROWTHRATE @ MATURITY lm() extended ---------------------------------------------------
-glimpse(GrowthDat_use)
+glimpse(GrowthDat_NoLn_use)
 
 # The full RSM model
-growth_mod_full <- lm(growth_mat ~ copper + I(copper^2) + juju + I(juju^2) + copper*juju*clone_type, data = GrowthDat_use)
-Anova(growth_mod_full, type = "II", test = "F") # strong effects: copper, copper:juju, copper:clone_type
-Confint(growth_mod_full) # no evidence for 2nd order copper and juju in coefficient, limited evidence of copper:juju and copper:clone_type
+growth_mod_full <- lm(growth_mat_NoLn ~ copper + I(copper^2) + juju + I(juju^2) + copper*juju*clone_type, data = GrowthDat_NoLn_use)
+Anova(growth_mod_full, type = "II", test = "F") # (strong) effects: copper, juju, clone_type, copper:juju, copper:clone_type
+Confint(growth_mod_full) # no evidence for 2nd order copper and juju in coefficient, limited evidence of copper:juju 
 
 # Linear Copper and juju (no polynomials)
-growth_mod_copperANDjuju_linear <- lm(growth_mat ~ copper + juju + copper*juju*clone_type, data = GrowthDat_use)
-Anova(growth_mod_copperANDjuju_linear, type = "II", test = "F") # strong effects: copper, copper:juju, copper:clone_type
-Confint(growth_mod_copperANDjuju_linear) # no evidence of copper:juju and copper:clone_type
+growth_mod_copperANDjuju_linear <- lm(growth_mat_NoLn ~ copper + juju + copper*juju*clone_type, data = GrowthDat_NoLn_use)
+Anova(growth_mod_copperANDjuju_linear, type = "II", test = "F") # strong effects: copper, juju, clone_type, copper:juju, copper:clone_type
+Confint(growth_mod_copperANDjuju_linear) # no evidence of juju and copper:juju 
+
+anova(growth_mod_full, growth_mod_copperANDjuju_linear)  # no difference, i.e. loss of term is justified by likelihood ratio test
 
 # Linear Copper AND juju, and no interaction of copper and juju (but interaction terms with clone_types)
-growth_mod_copperANDjuju_linear_noInt <- lm(growth_mat ~ copper + juju + copper*clone_type + juju*clone_type, data = GrowthDat_use)
-Anova(growth_mod_copperANDjuju_linear_noInt, type = "II", test = "F") # strong effects: copper, copper:clone_type
-Confint(growth_mod_copperANDjuju_linear_noInt) # 
+growth_mod_copperANDjuju_linear_noInt <- lm(growth_mat_NoLn ~ copper + juju + copper*clone_type + juju*clone_type, data = GrowthDat_NoLn_use)
+Anova(growth_mod_copperANDjuju_linear_noInt, type = "II", test = "F") # strong effects: copper, juju, clone_type, copper:clone_type
+Confint(growth_mod_copperANDjuju_linear_noInt) # no evidence of juju 
+
+anova(growth_mod_copperANDjuju_linear, growth_mod_copperANDjuju_linear_noInt)  # loss of term is NOT justified by likelihood ratio test; i.e. use model with linear copper and juju terms
+
+# MODEL to use: growth_mod_copperANDjuju_linear
+summary(growth_mod_copperANDjuju_linear)
+Anova(growth_mod_copperANDjuju_linear, type = "II") 
+Confint(growth_mod_copperANDjuju_linear) 
 
 
 # expand data
 growth_newX <- expand.grid(
   juju = seq(0,0.5,length = 10),
   copper = seq(0,25, length = 10),  
-  clone_type = unique(GrowthDat_use$clone_type))
+  clone_type = unique(GrowthDat_NoLn_use$clone_type))
 
 
 # fixed effect 
-growth_fixed_effect <- predict(growth_mod_copperANDjuju_linear_noInt, newdata = growth_newX, re.form = "response")
+growth_fixed_effect <- predict(growth_mod_copperANDjuju_linear, newdata = growth_newX, re.form = "response")
 
 # housekeeping
 growth_plotData <- data.table(growth_newX, fixed_effect=growth_fixed_effect)
@@ -2201,7 +2267,7 @@ growth_Mod_average <- ggplot(growth_plotData, aes(x = juju, y = copper))+
                               geom_raster(aes(fill = fixed_effect), interpolate = TRUE)+
                               scale_fill_continuous(type = "viridis")+
                               scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
-                              labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+                              labs(y=expression(copper~(µg~L^{-1})), x=expression(predator~cue~(µl~ml^{-1}))) +
                               facet_wrap(~clone_type) +
                               theme(rect = element_rect(fill = "transparent"),
                                     panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -2209,10 +2275,10 @@ growth_Mod_average <- ggplot(growth_plotData, aes(x = juju, y = copper))+
                                     panel.background = element_rect(fill = "transparent",colour = NA),
                                     plot.background = element_rect(fill = "transparent",colour = NA), 
                                     axis.line = element_line(size = 1),
-                                    axis.title.x = element_text(size=12, family='Arial'),
-                                    axis.title.y = element_text(size=12, family='Arial'),
+                                    axis.title.x = element_text(size=12),
+                                    axis.title.y = element_text(size=12),
                                     axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                                    axis.text = element_text(size=12, family='Arial'),
+                                    axis.text = element_text(size=12),
                                     strip.text.x = element_text(size =10, color = "black"),
                                     strip.text.y = element_text(size =10, color = "black"),
                                     panel.spacing.x = unit(4, "mm"),
@@ -2223,7 +2289,7 @@ growth_juju_clone <- ggplot(growth_plotData[copper == 0], aes(x = juju, y = fixe
                               geom_line(aes(linetype=clone_type),size = 1) + 
                               scale_linetype_manual(values=c("twodash","twodash")) +
                               scale_color_manual(values=c("#000000","#FF0000"))+
-                              labs(y=expression(Growth~rate[maturity]), x=expression(juju~(µl~ml^{-1}))) +
+                              labs(y=expression(growth~rate~(mm~d^{-1})), x=expression(predator~cue~(µl~ml^{-1}))) +
                               scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                               ylim(0.05,0.21) +
                               theme(rect = element_rect(fill = "transparent"),
@@ -2232,10 +2298,10 @@ growth_juju_clone <- ggplot(growth_plotData[copper == 0], aes(x = juju, y = fixe
                                     panel.background = element_rect(fill = "transparent",colour = NA),
                                     plot.background = element_rect(fill = "transparent",colour = NA), 
                                     axis.line = element_line(size = 1),
-                                    axis.title.x = element_text(size=12, family='Arial'),
-                                    axis.title.y = element_text(size=12, family='Arial'),
+                                    axis.title.x = element_text(size=12),
+                                    axis.title.y = element_text(size=12),
                                     axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                                    axis.text = element_text(size=12, family='Arial'),
+                                    axis.text = element_text(size=12),
                                     strip.text.x = element_text(size =10, color = "black"),
                                     strip.text.y = element_text(size =10, color = "black"),
                                     panel.spacing.x = unit(4, "mm"),
@@ -2246,7 +2312,7 @@ growth_copper_clone <- ggplot(growth_plotData[juju == 0], aes(x = copper, y = fi
                               geom_line(aes(linetype=clone_type),size = 1) +  
                               scale_linetype_manual(values=c("twodash","twodash")) +
                               scale_color_manual(values=c("#000000","#FF0000"))+
-                              labs(y=expression(Growth~rate[maturity]), x=expression(copper~(mg~L^{-1}))) +
+                              labs(y=expression(growth~rate~(mm~d^{-1})), x=expression(copper~(µg~L^{-1}))) +
                               scale_x_continuous(breaks=c(0,5,10,15,20,25)) +
                               ylim(0.05,0.21) +
                               theme(rect = element_rect(fill = "transparent"),
@@ -2255,31 +2321,37 @@ growth_copper_clone <- ggplot(growth_plotData[juju == 0], aes(x = copper, y = fi
                                     panel.background = element_rect(fill = "transparent",colour = NA),
                                     plot.background = element_rect(fill = "transparent",colour = NA), 
                                     axis.line = element_line(size = 1),
-                                    axis.title.x = element_text(size=12, family='Arial'),
-                                    axis.title.y = element_text(size=12, family='Arial'),
+                                    axis.title.x = element_text(size=12),
+                                    axis.title.y = element_text(size=12),
                                     axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                                    axis.text = element_text(size=12, family='Arial'),
+                                    axis.text = element_text(size=12),
                                     strip.text.x = element_text(size =10, color = "black"),
                                     strip.text.y = element_text(size =10, color = "black"),
                                     panel.spacing.x = unit(4, "mm"),
                                     panel.spacing.y = unit(1, "mm"))
 
 
-## GROWTHRATE MATURITY lmer() extended plot ---------------------------------------------------
+## GROWTHRATE MATURITY lm() extended plot ---------------------------------------------------
 
 patchwork_plots_growth_model_HvsL <- growth_Mod_average  / (growth_juju_clone | growth_copper_clone ) 
 
+# patchwork_plots_growth_model_HvsL + 
+#   plot_annotation(
+#     title = 'growth rate',
+#     subtitle = '(A) average effect of Cu and JuJu among clone types, 
+#     (B) effect of JuJu among clone types, 
+#     (C) effect of Cu among clone types', 
+#     tag_levels = 'A') + 
+#   plot_layout(nrow=2, height = c(6,3), guides = 'collect') & theme(legend.position = "right")
+# 
+# ggsave("patchwork_plots_growth_model_HvsL.tiff", dpi = 300, device = "tiff")  # Saving 6.21 x 6.89 in image
+
+setEPS()
+postscript("Fig4.eps", colormodel = "RGB", width = 6.2, height = 6.9)
 patchwork_plots_growth_model_HvsL + 
-  plot_annotation(
-    title = 'growth rate',
-    subtitle = '(A) average effect of Cu and JuJu among clone types, 
-    (B) effect of JuJu among clone types, 
-    (C) effect of Cu among clone types', 
-    tag_levels = 'A') + 
-  plot_layout(nrow=2, height = c(6,3), guides = 'collect') & theme(legend.position = "right")
-
-ggsave("patchwork_plots_growth_model_HvsL.tiff", dpi = 300, device = "tiff")  # Saving 6.21 x 6.89 in image
-
+  plot_annotation(tag_levels = 'A') + 
+  plot_layout(nrow=2, height = c(6,3), guides = 'collect') & theme(legend.position = "bottom")
+dev.off()
 
 
 ## AGE @ MATURITY lm() extended ---------------------------------------------------
@@ -2305,7 +2377,7 @@ anova(age_mod_copperANDjuju_linear, age_mod_copperANDjuju_linear_noInt)  # loss 
 
 # MODEL to use: age_mod_copperANDjuju_linear
 summary(age_mod_copperANDjuju_linear)
-Anova(age_mod_copperANDjuju_linear, type = "II") # Type II ANOVA using car with Wald test
+Anova(age_mod_copperANDjuju_linear, type = "II") 
 Confint(age_mod_copperANDjuju_linear) 
 
 
@@ -2327,7 +2399,7 @@ age_Mod_average <- ggplot(age_plotData, aes(x = juju, y = copper))+
                         geom_raster(aes(fill = fixed_effect), interpolate = TRUE)+
                         scale_fill_continuous(type = "viridis")+
                         scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
-                        labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+                        labs(y=expression(copper~(µg~L^{-1})), x=expression(predator~cue~(µl~ml^{-1}))) +
                         facet_wrap(~clone_type) +
                         theme(rect = element_rect(fill = "transparent"),
                               panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -2335,10 +2407,10 @@ age_Mod_average <- ggplot(age_plotData, aes(x = juju, y = copper))+
                               panel.background = element_rect(fill = "transparent",colour = NA),
                               plot.background = element_rect(fill = "transparent",colour = NA), 
                               axis.line = element_line(size = 1),
-                              axis.title.x = element_text(size=12, family='Arial'),
-                              axis.title.y = element_text(size=12, family='Arial'),
+                              axis.title.x = element_text(size=12),
+                              axis.title.y = element_text(size=12),
                               axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                              axis.text = element_text(size=12, family='Arial'),
+                              axis.text = element_text(size=12),
                               strip.text.x = element_text(size =10, color = "black"),
                               strip.text.y = element_text(size =10, color = "black"),
                               panel.spacing.x = unit(4, "mm"),
@@ -2349,7 +2421,7 @@ age_juju_clone <- ggplot(age_plotData[copper == 0], aes(x = juju, y = fixed_effe
                         geom_line(aes(linetype=clone_type),size = 1) + 
                         scale_linetype_manual(values=c("twodash","twodash")) +
                         scale_color_manual(values=c("#000000","#FF0000"))+
-                        labs(y=expression(age[maturity]), x=expression(juju~(µl~ml^{-1}))) +
+                        labs(y=expression(age[maturity]~(days)), x=expression(predator~cue~(µl~ml^{-1}))) +
                         scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                         ylim(4,13) +
                         theme(rect = element_rect(fill = "transparent"),
@@ -2358,10 +2430,10 @@ age_juju_clone <- ggplot(age_plotData[copper == 0], aes(x = juju, y = fixed_effe
                               panel.background = element_rect(fill = "transparent",colour = NA),
                               plot.background = element_rect(fill = "transparent",colour = NA), 
                               axis.line = element_line(size = 1),
-                              axis.title.x = element_text(size=12, family='Arial'),
-                              axis.title.y = element_text(size=12, family='Arial'),
+                              axis.title.x = element_text(size=12),
+                              axis.title.y = element_text(size=12),
                               axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                              axis.text = element_text(size=12, family='Arial'),
+                              axis.text = element_text(size=12),
                               strip.text.x = element_text(size =10, color = "black"),
                               strip.text.y = element_text(size =10, color = "black"),
                               panel.spacing.x = unit(4, "mm"),
@@ -2372,7 +2444,7 @@ age_copper_clone <- ggplot(age_plotData[juju == 0], aes(x = copper, y = fixed_ef
                         geom_line(aes(linetype=clone_type),size = 1) +  
                         scale_linetype_manual(values=c("twodash","twodash")) +
                         scale_color_manual(values=c("#000000","#FF0000"))+
-                        labs(y=expression(age[maturity]), x=expression(copper~(mg~L^{-1}))) +
+                        labs(y=expression(age[maturity]~(days)), x=expression(copper~(µg~L^{-1}))) +
                         scale_x_continuous(breaks=c(0,5,10,15,20,25)) +
                         ylim(4,13) +
                         theme(rect = element_rect(fill = "transparent"),
@@ -2381,31 +2453,37 @@ age_copper_clone <- ggplot(age_plotData[juju == 0], aes(x = copper, y = fixed_ef
                               panel.background = element_rect(fill = "transparent",colour = NA),
                               plot.background = element_rect(fill = "transparent",colour = NA), 
                               axis.line = element_line(size = 1),
-                              axis.title.x = element_text(size=12, family='Arial'),
-                              axis.title.y = element_text(size=12, family='Arial'),
+                              axis.title.x = element_text(size=12),
+                              axis.title.y = element_text(size=12),
                               axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                              axis.text = element_text(size=12, family='Arial'),
+                              axis.text = element_text(size=12),
                               strip.text.x = element_text(size =10, color = "black"),
                               strip.text.y = element_text(size =10, color = "black"),
                               panel.spacing.x = unit(4, "mm"),
                               panel.spacing.y = unit(1, "mm"))
 
 
-## AGE @ MATURITY lmer() extended plot ---------------------------------------------------
+## AGE @ MATURITY lm() extended plot ---------------------------------------------------
 
 patchwork_plots_age_model_HvsL <- age_Mod_average / (age_juju_clone | age_copper_clone )
 
+# patchwork_plots_age_model_HvsL + 
+#   plot_annotation(
+#     title = 'age @ maturity',
+#     subtitle = '(A) average effect of Cu and JuJu among clone types, 
+#     (B) effect of JuJu among clone types, 
+#     (C) effect of Cu among clone types', 
+#     tag_levels = 'A') + 
+#   plot_layout(nrow=2, height = c(6,3), guides = 'collect') & theme(legend.position = "right")
+# 
+# ggsave("patchwork_plots_age_model_HvsL.tiff", dpi = 300, device = "tiff")  # Saving 6.21 x 6.9 in image
+
+setEPS()
+postscript("Fig5.eps", colormodel = "RGB", width = 6.2, height = 6.9)
 patchwork_plots_age_model_HvsL + 
-  plot_annotation(
-    title = 'age @ maturity',
-    subtitle = '(A) average effect of Cu and JuJu among clone types, 
-    (B) effect of JuJu among clone types, 
-    (C) effect of Cu among clone types', 
-    tag_levels = 'A') + 
-  plot_layout(nrow=2, height = c(6,3), guides = 'collect') & theme(legend.position = "right")
-
-ggsave("patchwork_plots_age_model_HvsL.tiff", dpi = 300, device = "tiff")  # Saving 6.21 x 6.9 in image
-
+  plot_annotation(tag_levels = 'A') + 
+  plot_layout(nrow=2, height = c(6,3), guides = 'collect') & theme(legend.position = "bottom")
+dev.off()
 
 
 ## SURVIVAL ANALYSIS extended  ---------------------------------------------------
@@ -2415,11 +2493,11 @@ survival <- AllData[, c("clone","clone_type","cloneID","juju","copper","rep","su
 
 ## Cox Hazard Model (use 'coxph' when no random effects, and 'coxme' when using random effects)
 
-#
-mod1_HvsL <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper*clone_type, data = na.omit(survival))
+# Full model (no polynomials)
+mod1_HvsL <- coxph(Surv(survival_time,alive_dead) ~ juju*copper*clone_type, data = na.omit(survival))
 summary(mod1_HvsL)
-confint(mod1_HvsL)
-Anova(mod1_HvsL, type = "II") # strong copper and copper*clone effect, small juju*copper interaction 
+Anova(mod1_HvsL, type = "II") # (strong) copper, clone_type, and copper*clone effect, small juju*copper interaction 
+confint(mod1_HvsL) # no evidence of clone_type
 
 
 # expand grid
@@ -2434,15 +2512,15 @@ surv_fixed_effects_HvsL_lp <- predict(mod1_HvsL, type = "lp", newdata = surv_new
 surv_fixed_effects_HvsL_risk <- predict(mod1_HvsL, type = "risk", newdata = surv_newX, re.form = NA)  # risk factor 
 
 # housekeeping
-surv_plotData <- data.table(surv_newX, fixed_effect_lp=surv_fixed_effects_HvsL_lp, fixed_effect_risk=surv_fixed_effects_HvsL_risk)
+surv_plotData <- data.table(surv_newX, fixed_effect_lp=surv_fixed_effects_HvsL_lp, fixed_effect=surv_fixed_effects_HvsL_risk)
 
 
 # plots
 surv_Mod_average <- ggplot(surv_plotData, aes(x = juju, y = copper))+
-                        geom_raster(aes(fill = fixed_effect_risk), interpolate = TRUE)+  # fill = surv_fixed_effects_risk
+                        geom_raster(aes(fill = fixed_effect), interpolate = TRUE)+  # fill = surv_fixed_effects_risk
                         scale_fill_continuous(type = "viridis")+
                         scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
-                        labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) + 
+                        labs(y=expression(copper~(µg~L^{-1})), x=expression(predator~cue~(µl~ml^{-1}))) + 
                         facet_wrap(~clone_type) +
                         theme(rect = element_rect(fill = "transparent"),
                               panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -2450,21 +2528,21 @@ surv_Mod_average <- ggplot(surv_plotData, aes(x = juju, y = copper))+
                               panel.background = element_rect(fill = "transparent",colour = NA),
                               plot.background = element_rect(fill = "transparent",colour = NA), 
                               axis.line = element_line(size = 1),
-                              axis.title.x = element_text(size=12, family='Arial'),
-                              axis.title.y = element_text(size=12, family='Arial'),
+                              axis.title.x = element_text(size=12),
+                              axis.title.y = element_text(size=12),
                               axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                              axis.text = element_text(size=12, family='Arial'),
+                              axis.text = element_text(size=12),
                               strip.text.x = element_text(size =10, color = "black"),
                               strip.text.y = element_text(size =10, color = "black"),
                               panel.spacing.x = unit(4, "mm"),
                               panel.spacing.y = unit(1, "mm"))
                       
 
-surv_juju_clone <- ggplot(surv_plotData[copper == 0], aes(x = juju, y = fixed_effect_risk, group = clone_type, colour = clone_type))+
+surv_juju_clone <- ggplot(surv_plotData[copper == 0], aes(x = juju, y = fixed_effect, group = clone_type, colour = clone_type))+
                         geom_line(aes(linetype=clone_type),size = 1) + 
                         scale_linetype_manual(values=c("twodash","twodash")) +
                         scale_color_manual(values=c("#000000","#FF0000"))+
-                        labs(y=expression(survival[~risk~factor]), x=expression(juju~(µl~ml^{-1}))) +
+                        labs(y=expression(risk~of~death), x=expression(predator~cue~(µl~ml^{-1}))) +
                         scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                         ylim(0,16) +
                         theme(rect = element_rect(fill = "transparent"),
@@ -2473,21 +2551,21 @@ surv_juju_clone <- ggplot(surv_plotData[copper == 0], aes(x = juju, y = fixed_ef
                               panel.background = element_rect(fill = "transparent",colour = NA),
                               plot.background = element_rect(fill = "transparent",colour = NA), 
                               axis.line = element_line(size = 1),
-                              axis.title.x = element_text(size=12, family='Arial'),
-                              axis.title.y = element_text(size=12, family='Arial'),
+                              axis.title.x = element_text(size=12),
+                              axis.title.y = element_text(size=12),
                               axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                              axis.text = element_text(size=12, family='Arial'),
+                              axis.text = element_text(size=12),
                               strip.text.x = element_text(size =10, color = "black"),
                               strip.text.y = element_text(size =10, color = "black"),
                               panel.spacing.x = unit(4, "mm"),
                               panel.spacing.y = unit(1, "mm"))
 
 
-surv_copper_clone <- ggplot(surv_plotData[juju == 0], aes(x = copper, y = fixed_effect_risk, group = clone_type, colour = clone_type))+
+surv_copper_clone <- ggplot(surv_plotData[juju == 0], aes(x = copper, y = fixed_effect, group = clone_type, colour = clone_type))+
                         geom_line(aes(linetype=clone_type),size = 1) + 
                         scale_linetype_manual(values=c("twodash","twodash")) +
                         scale_color_manual(values=c("#000000","#FF0000"))+
-                        labs(y=expression(survival[~risk~factor]), x=expression(copper~(mg~L^{-1}))) +
+                        labs(y=expression(risk~of~death), x=expression(copper~(µg~L^{-1}))) +
                         scale_x_continuous(breaks=c(0,5,10,15,20,25)) +
                         ylim(0,16) +
                         theme(rect = element_rect(fill = "transparent"),
@@ -2496,10 +2574,10 @@ surv_copper_clone <- ggplot(surv_plotData[juju == 0], aes(x = copper, y = fixed_
                               panel.background = element_rect(fill = "transparent",colour = NA),
                               plot.background = element_rect(fill = "transparent",colour = NA), 
                               axis.line = element_line(size = 1),
-                              axis.title.x = element_text(size=12, family='Arial'),
-                              axis.title.y = element_text(size=12, family='Arial'),
+                              axis.title.x = element_text(size=12),
+                              axis.title.y = element_text(size=12),
                               axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                              axis.text = element_text(size=12, family='Arial'),
+                              axis.text = element_text(size=12),
                               strip.text.x = element_text(size =10, color = "black"),
                               strip.text.y = element_text(size =10, color = "black"),
                               panel.spacing.x = unit(4, "mm"),
@@ -2511,20 +2589,151 @@ surv_copper_clone <- ggplot(surv_plotData[juju == 0], aes(x = copper, y = fixed_
 
 patchwork_plots_surv_model_HvsL <- surv_Mod_average / (surv_juju_clone | surv_copper_clone )
 
+# patchwork_plots_surv_model_HvsL + 
+#   plot_annotation(
+#     title = 'survival up to maturity',
+#     subtitle = '(A) average effect of Cu and JuJu among clone types, 
+#     (B) effect of JuJu among clone types, 
+#     (C) effect of Cu among clone types', 
+#     tag_levels = 'A') + 
+#   plot_layout(nrow=2, height = c(6,3), guides = 'collect') & theme(legend.position = "right")
+# 
+# ggsave("patchwork_plots_surv_model_HvsL.tiff", dpi = 300, device = "tiff")  # Saving 6.21 x 6.9 in image
+
+setEPS()
+postscript("Fig6.eps", colormodel = "RGB", width = 6.2, height = 6.9)
 patchwork_plots_surv_model_HvsL + 
-  plot_annotation(
-    title = 'survival up to maturity',
-    subtitle = '(A) average effect of Cu and JuJu among clone types, 
-    (B) effect of JuJu among clone types, 
-    (C) effect of Cu among clone types', 
-    tag_levels = 'A') + 
-  plot_layout(nrow=2, height = c(6,3), guides = 'collect') & theme(legend.position = "right")
-
-ggsave("patchwork_plots_surv_model_HvsL.tiff", dpi = 300, device = "tiff")  # Saving 6.21 x 6.9 in image
+  plot_annotation(tag_levels = 'A') + 
+  plot_layout(nrow=2, height = c(6,3), guides = 'collect') & theme(legend.position = "bottom")
+dev.off()
 
 
 
 
+
+
+
+
+
+#####################################
+#### MAIN EFFECTS - Panels B & C ####
+#####################################
+
+## induction
+ind_mod_JUJU_HvsL <- lm(maxInd_total ~ juju * clone_type, data = IndDat_use[copper == 0])
+
+summary(ind_mod_JUJU_HvsL)
+Confint(ind_mod_JUJU_HvsL)  
+Anova(ind_mod_JUJU_HvsL, type = "II",  test = "F")
+
+# F = 34.822, df = 1, p = 4.384e-08
+# juju has strong positive effect
+
+
+ind_mod_CU_HvsL <- lm(maxInd_total ~ copper * clone_type, data = IndDat_use[juju == 0])
+
+summary(ind_mod_CU_HvsL)
+Confint(ind_mod_CU_HvsL)  
+Anova(ind_mod_CU_HvsL, type = "II",  test = "F")
+
+# F = 0.9933, df = 1, p = 0.3210
+# no evidence that copper has an effect
+
+
+## size
+size_mod_JUJU_HvsL <- lm(size_mat ~ juju * clone_type, data = SizeDat_use[copper == 0])
+
+summary(size_mod_JUJU_HvsL)
+Confint(size_mod_JUJU_HvsL)  
+Anova(size_mod_JUJU_HvsL, type = "II",  test = "F")
+
+# F = 3.3712, df = 1, p = 0.0696107
+# juju has marginally no effect
+
+
+size_mod_CU_HvsL <- lm(size_mat ~ copper * clone_type, data = SizeDat_use[juju == 0])
+
+summary(size_mod_CU_HvsL)
+Confint(size_mod_CU_HvsL)  
+Anova(size_mod_CU_HvsL, type = "II",  test = "F")
+
+# F = 25.3248, df = 1, p = 2.627e-06
+# copper has strong negative effect
+
+
+## GR
+growth_mod_JUJU_HvsL <- lm(growth_mat_NoLn ~ juju * clone_type, data = GrowthDat_NoLn_use[copper == 0])
+
+summary(growth_mod_JUJU_HvsL)
+Confint(growth_mod_JUJU_HvsL)  
+Anova(growth_mod_JUJU_HvsL, type = "II",  test = "F")
+
+# F = 0.0159, df = 1, p = 0.90000
+# no evidence that juju has an effect
+
+
+growth_mod_CU_HvsL <- lm(growth_mat_NoLn ~ copper * clone_type, data = GrowthDat_NoLn_use[juju == 0])
+
+summary(growth_mod_CU_HvsL)
+Confint(growth_mod_CU_HvsL)  
+Anova(growth_mod_CU_HvsL, type = "II",  test = "F")
+
+# F = 74.2804, df = 1, p = 2.941e-13
+# copper has strong negative effect
+
+
+## age
+age_mod_JUJU_HvsL <- lm(age_mat ~ juju * clone_type, data = AgeDat_use[copper == 0])
+
+summary(age_mod_JUJU_HvsL)
+Confint(age_mod_JUJU_HvsL)  
+Anova(age_mod_JUJU_HvsL, type = "II",  test = "F")
+
+# F = 0.3879, df = 1, p = 0.534968
+# no evidence that juju has an effect
+
+
+age_mod_CU_HvsL <- lm(age_mat ~ copper * clone_type, data = AgeDat_use[juju == 0])
+
+summary(age_mod_CU_HvsL)
+Confint(age_mod_CU_HvsL)  
+Anova(age_mod_CU_HvsL, type = "II",  test = "F")
+
+# F = 60.7104, df = 1, p = 1.393e-11
+# copper has strong positive effect
+
+
+## survival
+survival <- AllData[, c("clone","clone_type","cloneID","juju","copper","rep","survival_time","alive_dead")]
+## survival data based on 'maturity data', i.e. data was recorded until animals were mature; 0 = alive, 1 = dead; 
+
+surv_mod_JUJU_HvsL <- coxph(Surv(survival_time,alive_dead) ~ juju * clone_type, data = na.omit(survival[copper == 0]))
+
+summary(surv_mod_JUJU_HvsL)
+Confint(surv_mod_JUJU_HvsL)  
+Anova(surv_mod_JUJU_HvsL, type = "II")
+
+# Chisq = 4.9729, df = 1, p = 0.02575
+# juju has small positive effect (increase of risk score, thus higher probability of death)
+
+
+surv_mod_CU_HvsL <- coxph(Surv(survival_time,alive_dead) ~ copper * clone_type, data = na.omit(survival[juju == 0]))
+
+summary(surv_mod_CU_HvsL)
+Confint(surv_mod_CU_HvsL)  
+Anova(surv_mod_CU_HvsL, type = "II")
+
+# Chisq = 36.744, df = 1, p = 1.347e-09
+# copper has strong positive effect (increase of risk score, thus higher probability of death)
+
+
+
+
+
+
+###################################
+#### INDUCTION vs other TRAITS ####
+###################################
 
 ## Induction vs other life history traits (i.e. age and size at maturity and somatic growth rate) --------------------------
 
@@ -2556,11 +2765,11 @@ setkey(SizeDat_use_LOWvsHIGH, copper, juju, clone_type)
 
 
 
-GrowthDat_use_LOWvsHIGH <- as.data.table(na.omit(GrowthDat_use) %>% 
+GrowthDat_use_LOWvsHIGH <- as.data.table(na.omit(GrowthDat_NoLn_use) %>% 
   group_by(copper, juju, clone_type) %>% 
   summarise(
-    meanGrowth = mean(growth_mat), 
-    seGrowth = sd(growth_mat)/sqrt(sum(!is.na(growth_mat)))))
+    meanGrowth = mean(growth_mat_NoLn), 
+    seGrowth = sd(growth_mat_NoLn)/sqrt(sum(!is.na(growth_mat_NoLn)))))
 
 GrowthDat_use_LOWvsHIGH[, Growth_min := meanGrowth-seGrowth]
 GrowthDat_use_LOWvsHIGH[, Growth_max := meanGrowth+seGrowth]
@@ -2700,13 +2909,14 @@ Ind_Age[, copper_juju := c('Cu0 - Juju0',
 # plot extremes (i.e., [copper == 0][juju == 0], [copper == 0][juju == 0.5], [copper == 25][juju == 0], [copper == 25][juju == 0.5])
 
 # Induction vs Size
-Ind_size_p1 <- ggplot(Ind_Size[copper == 0][juju == 0][, -"clone_type"], aes(x = meanInd, y = meanSize)) + 
-                    geom_line(linetype="twodash", colour="darkgrey") + 
-                    geom_point(colour = c("#FF0000", "#000000"), size = 3) + 
-                    geom_errorbar(aes(ymin = Size_min, ymax = Size_max), width = 2, colour = c("#FF0000", "#000000"), size = 0.5) + 
-                    geom_errorbarh(aes(xmin = Ind_min, xmax = Ind_max), height = 0.01, colour = c("#FF0000", "#000000"), size = 0.5) + 
-                    facet_wrap(~copper_juju) +
-                    labs(y=expression(size[maturity]), x=expression(mean~induction[max])) +
+Ind_Size_data <- Ind_Size[copper_juju %in% c("Cu0 - Juju0", "Cu25 - Juju0", "Cu0 - Juju0.5", "Cu25 - Juju0.5")]
+
+Ind_size <- ggplot(Ind_Size_data, aes(x = meanInd, y = meanSize, colour = clone_type)) + 
+                    geom_line(aes(group = copper_juju), linetype="twodash", colour="darkgrey") + 
+                    geom_point(colour = rep(c("#FF0000", "#000000"),4), size = 3) + 
+                    geom_errorbar(aes(ymin = Size_min, ymax = Size_max), width = 2, colour = rep(c("#FF0000", "#000000"),4), size = 0.5) + 
+                    geom_errorbarh(aes(xmin = Ind_min, xmax = Ind_max), height = 0.01, colour = rep(c("#FF0000", "#000000"),4), size = 0.5) + 
+                    labs(y=expression(size[maturity]~(mm)), x=expression(mean~induction[max])) +
                     ylim(1.4, 2.1) +
                     xlim(0, 100) +
                     theme(rect = element_rect(fill = "transparent"),
@@ -2715,331 +2925,370 @@ Ind_size_p1 <- ggplot(Ind_Size[copper == 0][juju == 0][, -"clone_type"], aes(x =
                           panel.background = element_rect(fill = "transparent",colour = NA),
                           plot.background = element_rect(fill = "transparent",colour = NA), 
                           axis.line = element_line(size = 1),
-                          axis.title.x = element_text(size=12, family='Arial'),
-                          axis.title.y = element_text(size=12, family='Arial'),
-                          axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                          axis.text = element_text(size=12, family='Arial'),
+                          axis.title.x = element_text(size=12),
+                          axis.title.y = element_text(size=12),
+                          # axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
+                          axis.text = element_text(size=12),
                           strip.text.x = element_text(size =10, color = "black"),
                           strip.text.y = element_text(size =10, color = "black"),
                           panel.spacing.x = unit(4, "mm"),
                           panel.spacing.y = unit(1, "mm"))
-
-
-Ind_size_p2 <- ggplot(Ind_Size[copper == 0][juju == 0.5][, -"clone_type"], aes(x = meanInd, y = meanSize)) + 
-                    geom_line(linetype="twodash", colour="darkgrey") + 
-                    geom_point(colour = c("#FF0000", "#000000"), size = 3) + 
-                    geom_errorbar(aes(ymin = Size_min, ymax = Size_max), width = 2, colour = c("#FF0000", "#000000"), size = 0.5) + 
-                    geom_errorbarh(aes(xmin = Ind_min, xmax = Ind_max), height = 0.01, colour = c("#FF0000", "#000000"), size = 0.5) +                    facet_wrap(~copper_juju) +
-                    labs(y=expression(size[maturity]), x=expression(mean~induction[max])) +
-                    ylim(1.4, 2.1) +
-                    xlim(0, 100) +
-                    theme(rect = element_rect(fill = "transparent"),
-                          panel.grid.major = element_line(colour = "grey70", size=0.25),
-                          panel.grid.minor = element_line(colour = "grey90", size=0.1),
-                          panel.background = element_rect(fill = "transparent",colour = NA),
-                          plot.background = element_rect(fill = "transparent",colour = NA), 
-                          axis.line = element_line(size = 1),
-                          axis.title.x = element_text(size=12, family='Arial'),
-                          axis.title.y = element_text(size=12, family='Arial'),
-                          axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                          axis.text = element_text(size=12, family='Arial'),
-                          strip.text.x = element_text(size =10, color = "black"),
-                          strip.text.y = element_text(size =10, color = "black"),
-                          panel.spacing.x = unit(4, "mm"),
-                          panel.spacing.y = unit(1, "mm"))
-
-
-Ind_size_p3 <- ggplot(Ind_Size[copper == 25][juju == 0][, -"clone_type"], aes(x = meanInd, y = meanSize)) + 
-                    geom_line(linetype="twodash", colour="darkgrey") + 
-                    geom_point(colour = c("#FF0000", "#000000"), size = 3) + 
-                    geom_errorbar(aes(ymin = Size_min, ymax = Size_max), width = 2, colour = c("#FF0000", "#000000"), size = 0.5) + 
-                    geom_errorbarh(aes(xmin = Ind_min, xmax = Ind_max), height = 0.01, colour = c("#FF0000", "#000000"), size = 0.5) +                    facet_wrap(~copper_juju) +
-                    labs(y=expression(size[maturity]), x=expression(mean~induction[max])) +
-                    ylim(1.4, 2.1) +
-                    xlim(0, 100) +
-                    theme(rect = element_rect(fill = "transparent"),
-                          panel.grid.major = element_line(colour = "grey70", size=0.25),
-                          panel.grid.minor = element_line(colour = "grey90", size=0.1),
-                          panel.background = element_rect(fill = "transparent",colour = NA),
-                          plot.background = element_rect(fill = "transparent",colour = NA), 
-                          axis.line = element_line(size = 1),
-                          axis.title.x = element_text(size=12, family='Arial'),
-                          axis.title.y = element_text(size=12, family='Arial'),
-                          axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                          axis.text = element_text(size=12, family='Arial'),
-                          strip.text.x = element_text(size =10, color = "black"),
-                          strip.text.y = element_text(size =10, color = "black"),
-                          panel.spacing.x = unit(4, "mm"),
-                          panel.spacing.y = unit(1, "mm"))
-
-
-Ind_size_p4 <- ggplot(Ind_Size[copper == 25][juju == 0.5][, -"clone_type"], aes(x = meanInd, y = meanSize)) + 
-                    geom_line(linetype="twodash", colour="darkgrey") + 
-                    geom_point(colour = c("#FF0000", "#000000"), size = 3) + 
-                    geom_errorbar(aes(ymin = Size_min, ymax = Size_max), width = 2, colour = c("#FF0000", "#000000"), size = 0.5) + 
-                    geom_errorbarh(aes(xmin = Ind_min, xmax = Ind_max), height = 0.01, colour = c("#FF0000", "#000000"), size = 0.5) +                   facet_wrap(~copper_juju) +
-                    labs(y=expression(size[maturity]), x=expression(mean~induction[max])) +
-                    ylim(1.4, 2.1) +
-                    xlim(0, 100) +
-                    theme(rect = element_rect(fill = "transparent"),
-                          panel.grid.major = element_line(colour = "grey70", size=0.25),
-                          panel.grid.minor = element_line(colour = "grey90", size=0.1),
-                          panel.background = element_rect(fill = "transparent",colour = NA),
-                          plot.background = element_rect(fill = "transparent",colour = NA), 
-                          axis.line = element_line(size = 1),
-                          axis.title.x = element_text(size=12, family='Arial'),
-                          axis.title.y = element_text(size=12, family='Arial'),
-                          axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                          axis.text = element_text(size=12, family='Arial'),
-                          strip.text.x = element_text(size =10, color = "black"),
-                          strip.text.y = element_text(size =10, color = "black"),
-                          panel.spacing.x = unit(4, "mm"),
-                          panel.spacing.y = unit(1, "mm"))
-
-
-(Ind_size_p3 / Ind_size_p1) | (Ind_size_p4 / Ind_size_p2)
-
-## 
-patchwork_plots_IndvsSize_HvsL <- (Ind_size_p3 / Ind_size_p1) | (Ind_size_p4 / Ind_size_p2)
-
-patchwork_plots_IndvsSize_HvsL + 
-  plot_annotation(
-    title = 'induction vs size @ maturity among clone types',
-    subtitle = 
-'(A) high Copper & no Juju, 
-(B) no Copper & no Juju, 
-(C) high Copper & high Juju, 
-(D) no Copper & high Juju', 
-    tag_levels = 'A') 
-
-ggsave("patchwork_plots_IndVsSize_HvsL.tiff", dpi = 300, device = "tiff")  # Saving 6.21 x 6.9 in image
 
 
 # Induction vs GrowthRate
-Ind_growth_p1 <- ggplot(Ind_Growth[copper == 0][juju == 0][, -"clone_type"], aes(x = meanInd, y = meanGrowth)) + 
-                    geom_line(linetype="twodash", colour="darkgrey") + 
-                    geom_point(colour = c("#FF0000", "#000000"), size = 3) + 
-                    geom_errorbar(aes(ymin = Growth_min, ymax = Growth_max), width = 2, colour = c("#FF0000", "#000000"), size = 0.5) + 
-                    geom_errorbarh(aes(xmin = Ind_min, xmax = Ind_max), height = 0.003, colour = c("#FF0000", "#000000"), size = 0.5) + 
-                    facet_wrap(~copper_juju) +
-                    labs(y=expression(Growth[maturity]), x=expression(mean~induction[max])) +
-                    ylim(0.05, 0.21) +
-                    xlim(0, 100) +
-                    theme(rect = element_rect(fill = "transparent"),
-                          panel.grid.major = element_line(colour = "grey70", size=0.25),
-                          panel.grid.minor = element_line(colour = "grey90", size=0.1),
-                          panel.background = element_rect(fill = "transparent",colour = NA),
-                          plot.background = element_rect(fill = "transparent",colour = NA), 
-                          axis.line = element_line(size = 1),
-                          axis.title.x = element_text(size=12, family='Arial'),
-                          axis.title.y = element_text(size=12, family='Arial'),
-                          axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                          axis.text = element_text(size=12, family='Arial'),
-                          strip.text.x = element_text(size =10, color = "black"),
-                          strip.text.y = element_text(size =10, color = "black"),
-                          panel.spacing.x = unit(4, "mm"),
-                          panel.spacing.y = unit(1, "mm"))
+Ind_Growth_data <- Ind_Growth[copper_juju %in% c("Cu0 - Juju0", "Cu25 - Juju0", "Cu0 - Juju0.5", "Cu25 - Juju0.5")]
 
-
-Ind_growth_p2 <- ggplot(Ind_Growth[copper == 0][juju == 0.5][, -"clone_type"], aes(x = meanInd, y = meanGrowth)) + 
-  geom_line(linetype="twodash", colour="darkgrey") + 
-  geom_point(colour = c("#FF0000", "#000000"), size = 3) + 
-  geom_errorbar(aes(ymin = Growth_min, ymax = Growth_max), width = 2, colour = c("#FF0000", "#000000"), size = 0.5) + 
-  geom_errorbarh(aes(xmin = Ind_min, xmax = Ind_max), height = 0.003, colour = c("#FF0000", "#000000"), size = 0.5) + 
-  facet_wrap(~copper_juju) +
-  labs(y=expression(Growth[maturity]), x=expression(mean~induction[max])) +
-  ylim(0.05, 0.21) +
-  xlim(0, 100) +
-  theme(rect = element_rect(fill = "transparent"),
-        panel.grid.major = element_line(colour = "grey70", size=0.25),
-        panel.grid.minor = element_line(colour = "grey90", size=0.1),
-        panel.background = element_rect(fill = "transparent",colour = NA),
-        plot.background = element_rect(fill = "transparent",colour = NA), 
-        axis.line = element_line(size = 1),
-        axis.title.x = element_text(size=12, family='Arial'),
-        axis.title.y = element_text(size=12, family='Arial'),
-        axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-        axis.text = element_text(size=12, family='Arial'),
-        strip.text.x = element_text(size =10, color = "black"),
-        strip.text.y = element_text(size =10, color = "black"),
-        panel.spacing.x = unit(4, "mm"),
-        panel.spacing.y = unit(1, "mm"))
-
-
-Ind_growth_p3 <- ggplot(Ind_Growth[copper == 25][juju == 0][, -"clone_type"], aes(x = meanInd, y = meanGrowth)) + 
-  geom_line(linetype="twodash", colour="darkgrey") + 
-  geom_point(colour = c("#FF0000", "#000000"), size = 3) + 
-  geom_errorbar(aes(ymin = Growth_min, ymax = Growth_max), width = 2, colour = c("#FF0000", "#000000"), size = 0.5) + 
-  geom_errorbarh(aes(xmin = Ind_min, xmax = Ind_max), height = 0.003, colour = c("#FF0000", "#000000"), size = 0.5) + 
-  facet_wrap(~copper_juju) +
-  labs(y=expression(Growth[maturity]), x=expression(mean~induction[max])) +
-  ylim(0.05, 0.21) +
-  xlim(0, 100) +
-  theme(rect = element_rect(fill = "transparent"),
-        panel.grid.major = element_line(colour = "grey70", size=0.25),
-        panel.grid.minor = element_line(colour = "grey90", size=0.1),
-        panel.background = element_rect(fill = "transparent",colour = NA),
-        plot.background = element_rect(fill = "transparent",colour = NA), 
-        axis.line = element_line(size = 1),
-        axis.title.x = element_text(size=12, family='Arial'),
-        axis.title.y = element_text(size=12, family='Arial'),
-        axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-        axis.text = element_text(size=12, family='Arial'),
-        strip.text.x = element_text(size =10, color = "black"),
-        strip.text.y = element_text(size =10, color = "black"),
-        panel.spacing.x = unit(4, "mm"),
-        panel.spacing.y = unit(1, "mm"))
-
-
-Ind_growth_p4 <- ggplot(Ind_Growth[copper == 25][juju == 0.5][, -"clone_type"], aes(x = meanInd, y = meanGrowth)) + 
-  geom_line(linetype="twodash", colour="darkgrey") + 
-  geom_point(colour = c("#FF0000", "#000000"), size = 3) + 
-  geom_errorbar(aes(ymin = Growth_min, ymax = Growth_max), width = 2, colour = c("#FF0000", "#000000"), size = 0.5) + 
-  geom_errorbarh(aes(xmin = Ind_min, xmax = Ind_max), height = 0.003, colour = c("#FF0000", "#000000"), size = 0.5) + 
-  facet_wrap(~copper_juju) +
-  labs(y=expression(Growth[maturity]), x=expression(mean~induction[max])) +
-  ylim(0.05, 0.21) +
-  xlim(0, 100) +
-  theme(rect = element_rect(fill = "transparent"),
-        panel.grid.major = element_line(colour = "grey70", size=0.25),
-        panel.grid.minor = element_line(colour = "grey90", size=0.1),
-        panel.background = element_rect(fill = "transparent",colour = NA),
-        plot.background = element_rect(fill = "transparent",colour = NA), 
-        axis.line = element_line(size = 1),
-        axis.title.x = element_text(size=12, family='Arial'),
-        axis.title.y = element_text(size=12, family='Arial'),
-        axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-        axis.text = element_text(size=12, family='Arial'),
-        strip.text.x = element_text(size =10, color = "black"),
-        strip.text.y = element_text(size =10, color = "black"),
-        panel.spacing.x = unit(4, "mm"),
-        panel.spacing.y = unit(1, "mm"))
-
-
-## 
-patchwork_plots_IndvsGrowth_HvsL <- (Ind_growth_p3 / Ind_growth_p1) | (Ind_growth_p4 / Ind_growth_p2)
-
-patchwork_plots_IndvsGrowth_HvsL + 
-  plot_annotation(
-    title = 'induction vs growth up to maturity among clone types',
-    subtitle = 
-'(A) high Copper & no Juju, (B) no Copper & no Juju, 
-(C) high Copper & high Juju, (D) no Copper & high Juju', 
-    tag_levels = 'A') 
-
-ggsave("patchwork_plots_IndVsGrowth_HvsL.tiff", dpi = 300, device = "tiff")  # Saving 6.21 x 6.9 in image
+Ind_growth <- ggplot(Ind_Growth_data, aes(y = meanInd, x = meanGrowth, colour = clone_type)) + 
+                        geom_line(aes(group = clone_type), linetype="twodash", colour="darkgrey") + 
+                        geom_point(colour = rep(c("#FF0000", "#000000"),4), size = 3) + 
+                        geom_errorbarh(aes(xmin = Growth_min, xmax = Growth_max), height = 2, colour = rep(c("#FF0000", "#000000"),4), size = 0.5) + 
+                        geom_errorbar(aes(ymin = Ind_min, ymax = Ind_max), width = 0.01, colour = rep(c("#FF0000", "#000000"),4), size = 0.5) + 
+                        labs(x=expression(growth~rate~(mm~d^{-1})), y=expression(mean~induction[max])) +
+                        xlim(0.05, 0.21) +
+                        ylim(0, 100) +
+                        theme(rect = element_rect(fill = "transparent"),
+                              panel.grid.major = element_line(colour = "grey70", size=0.25),
+                              panel.grid.minor = element_line(colour = "grey90", size=0.1),
+                              panel.background = element_rect(fill = "transparent",colour = NA),
+                              plot.background = element_rect(fill = "transparent",colour = NA), 
+                              axis.line = element_line(size = 1),
+                              axis.title.x = element_text(size=12),
+                              axis.title.y = element_text(size=12),
+                              # axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
+                              axis.text = element_text(size=12),
+                              strip.text.x = element_text(size =10, color = "black"),
+                              strip.text.y = element_text(size =10, color = "black"),
+                              panel.spacing.x = unit(4, "mm"),
+                              panel.spacing.y = unit(1, "mm"))
 
 
 # Induction vs Age
-Ind_age_p1 <- ggplot(Ind_Age[copper == 0][juju == 0][, -"clone_type"], aes(x = meanInd, y = meanAge)) + 
-                    geom_line(linetype="twodash", colour="darkgrey") + 
-                    geom_point(colour = c("#FF0000", "#000000"), size = 3) + 
-                    geom_errorbar(aes(ymin = Age_min, ymax = Age_max), width = 2, colour = c("#FF0000", "#000000"), size = 0.5) + 
-                    geom_errorbarh(aes(xmin = Ind_min, xmax = Ind_max), height = 0.01, colour = c("#FF0000", "#000000"), size = 0.5) + 
-                    facet_wrap(~copper_juju) +
-                    labs(y=expression(age[maturity]), x=expression(mean~induction[max])) +
-                    ylim(4, 13) +
-                    xlim(0, 100) +
-                    theme(rect = element_rect(fill = "transparent"),
-                          panel.grid.major = element_line(colour = "grey70", size=0.25),
-                          panel.grid.minor = element_line(colour = "grey90", size=0.1),
-                          panel.background = element_rect(fill = "transparent",colour = NA),
-                          plot.background = element_rect(fill = "transparent",colour = NA), 
-                          axis.line = element_line(size = 1),
-                          axis.title.x = element_text(size=12, family='Arial'),
-                          axis.title.y = element_text(size=12, family='Arial'),
-                          axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                          axis.text = element_text(size=12, family='Arial'),
-                          strip.text.x = element_text(size =10, color = "black"),
-                          strip.text.y = element_text(size =10, color = "black"),
-                          panel.spacing.x = unit(4, "mm"),
-                          panel.spacing.y = unit(1, "mm"))
+Ind_Age_data <- Ind_Age[copper_juju %in% c("Cu0 - Juju0", "Cu25 - Juju0", "Cu0 - Juju0.5", "Cu25 - Juju0.5")]
 
 
-Ind_age_p2 <- ggplot(Ind_Age[copper == 0][juju == 0.5][, -"clone_type"], aes(x = meanInd, y = meanAge)) + 
-                    geom_line(linetype="twodash", colour="darkgrey") + 
-                    geom_point(colour = c("#FF0000", "#000000"), size = 3) + 
-                    geom_errorbar(aes(ymin = Age_min, ymax = Age_max), width = 2, colour = c("#FF0000", "#000000"), size = 0.5) + 
-                    geom_errorbarh(aes(xmin = Ind_min, xmax = Ind_max), height = 0.01, colour = c("#FF0000", "#000000"), size = 0.5) +                    facet_wrap(~copper_juju) +
-                    labs(y=expression(age[maturity]), x=expression(mean~induction[max])) +
-                    ylim(4, 13) +
-                    xlim(0, 100) +
-                    theme(rect = element_rect(fill = "transparent"),
-                          panel.grid.major = element_line(colour = "grey70", size=0.25),
-                          panel.grid.minor = element_line(colour = "grey90", size=0.1),
-                          panel.background = element_rect(fill = "transparent",colour = NA),
-                          plot.background = element_rect(fill = "transparent",colour = NA), 
-                          axis.line = element_line(size = 1),
-                          axis.title.x = element_text(size=12, family='Arial'),
-                          axis.title.y = element_text(size=12, family='Arial'),
-                          axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                          axis.text = element_text(size=12, family='Arial'),
-                          strip.text.x = element_text(size =10, color = "black"),
-                          strip.text.y = element_text(size =10, color = "black"),
-                          panel.spacing.x = unit(4, "mm"),
-                          panel.spacing.y = unit(1, "mm"))
+Ind_age <- ggplot(Ind_Age_data, aes(y = meanInd, x = meanAge, colour = clone_type)) + 
+  geom_line(aes(group = clone_type), linetype="twodash", colour="darkgrey") + 
+  geom_point(colour = rep(c("#FF0000", "#000000"),4), size = 3) + 
+                              geom_errorbarh(aes(xmin = Age_min, xmax = Age_max), height = 2, colour = rep(c("#FF0000", "#000000"),4), size = 0.5) + 
+                              geom_errorbar(aes(ymin = Ind_min, ymax = Ind_max), width = 0.01, colour = rep(c("#FF0000", "#000000"),4), size = 0.5) + 
+                              labs(x=expression(age[maturity]~(days)), y=expression(mean~induction[max])) +
+                              xlim(4, 13) +
+                              ylim(0, 100) +
+                              theme(rect = element_rect(fill = "transparent"),
+                                    panel.grid.major = element_line(colour = "grey70", size=0.25),
+                                    panel.grid.minor = element_line(colour = "grey90", size=0.1),
+                                    panel.background = element_rect(fill = "transparent",colour = NA),
+                                    plot.background = element_rect(fill = "transparent",colour = NA), 
+                                    axis.line = element_line(size = 1),
+                                    axis.title.x = element_text(size=12),
+                                    axis.title.y = element_text(size=12),
+                                    # axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
+                                    axis.text = element_text(size=12),
+                                    strip.text.x = element_text(size =10, color = "black"),
+                                    strip.text.y = element_text(size =10, color = "black"),
+                                    panel.spacing.x = unit(4, "mm"),
+                                    panel.spacing.y = unit(1, "mm"))
 
 
-Ind_age_p3 <- ggplot(Ind_Age[copper == 25][juju == 0][, -"clone_type"], aes(x = meanInd, y = meanAge)) + 
-                    geom_line(linetype="twodash", colour="darkgrey") + 
-                    geom_point(colour = c("#FF0000", "#000000"), size = 3) + 
-                    geom_errorbar(aes(ymin = Age_min, ymax = Age_max), width = 2, colour = c("#FF0000", "#000000"), size = 0.5) + 
-                    geom_errorbarh(aes(xmin = Ind_min, xmax = Ind_max), height = 0.01, colour = c("#FF0000", "#000000"), size = 0.5) +                    facet_wrap(~copper_juju) +
-                    labs(y=expression(age[maturity]), x=expression(mean~induction[max])) +
-                    ylim(4, 13) +
-                    xlim(0, 100) +
-                    theme(rect = element_rect(fill = "transparent"),
-                          panel.grid.major = element_line(colour = "grey70", size=0.25),
-                          panel.grid.minor = element_line(colour = "grey90", size=0.1),
-                          panel.background = element_rect(fill = "transparent",colour = NA),
-                          plot.background = element_rect(fill = "transparent",colour = NA), 
-                          axis.line = element_line(size = 1),
-                          axis.title.x = element_text(size=12, family='Arial'),
-                          axis.title.y = element_text(size=12, family='Arial'),
-                          axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                          axis.text = element_text(size=12, family='Arial'),
-                          strip.text.x = element_text(size =10, color = "black"),
-                          strip.text.y = element_text(size =10, color = "black"),
-                          panel.spacing.x = unit(4, "mm"),
-                          panel.spacing.y = unit(1, "mm"))
-
-
-Ind_age_p4 <- ggplot(Ind_Age[copper == 25][juju == 0.5][, -"clone_type"], aes(x = meanInd, y = meanAge)) + 
-                      geom_line(linetype="twodash", colour="darkgrey") + 
-                      geom_point(colour = c("#FF0000", "#000000"), size = 3) + 
-                      geom_errorbar(aes(ymin = Age_min, ymax = Age_max), width = 2, colour = c("#FF0000", "#000000"), size = 0.5) + 
-                      geom_errorbarh(aes(xmin = Ind_min, xmax = Ind_max), height = 0.01, colour = c("#FF0000", "#000000"), size = 0.5) +                   facet_wrap(~copper_juju) +
-                      labs(y=expression(age[maturity]), x=expression(mean~induction[max])) +
-                      ylim(4, 13) +
-                      xlim(0, 100) +
-                      theme(rect = element_rect(fill = "transparent"),
-                            panel.grid.major = element_line(colour = "grey70", size=0.25),
-                            panel.grid.minor = element_line(colour = "grey90", size=0.1),
-                            panel.background = element_rect(fill = "transparent",colour = NA),
-                            plot.background = element_rect(fill = "transparent",colour = NA), 
-                            axis.line = element_line(size = 1),
-                            axis.title.x = element_text(size=12, family='Arial'),
-                            axis.title.y = element_text(size=12, family='Arial'),
-                            axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                            axis.text = element_text(size=12, family='Arial'),
-                            strip.text.x = element_text(size =10, color = "black"),
-                            strip.text.y = element_text(size =10, color = "black"),
-                            panel.spacing.x = unit(4, "mm"),
-                            panel.spacing.y = unit(1, "mm"))
-
-
-## 
-patchwork_plots_IndvsAge_HvsL <- (Ind_age_p3 / Ind_age_p1) | (Ind_age_p4 / Ind_age_p2)
-
-patchwork_plots_IndvsAge_HvsL + 
+## all plots together
+patchwork_plots_HvsL <- Ind_size | Ind_growth | Ind_age
+  
+setEPS()
+postscript("Fig7.eps", colormodel = "RGB", width = 8, height = 5)
+patchwork_plots_HvsL +  
   plot_annotation(
-    title = 'induction vs age @ maturity among clone types',
-    subtitle = 
-'(A) high Copper & no Juju, 
-(B) no Copper & no Juju, 
-(C) high Copper & high Juju, 
-(D) no Copper & high Juju', 
-    tag_levels = 'A') 
+    tag_levels = 'A') +
+  plot_layout(ncol=3, width = c(1,1,1), guides = 'collect') & theme(legend.position = "bottom")
+dev.off()
 
-ggsave("patchwork_plots_IndVsAge_HvsL.tiff", dpi = 300, device = "tiff")  # Saving 6.21 x 6.9 in image
+
+
+## stats for figure 7 ---------------------
+
+## Do LOW and HIGH responders differ?
+
+# data to use:
+Size_data_fig7 <- na.omit(SizeDat_use[copper == 0 & juju == 0 | copper == 25 & juju == 0 | copper == 0 & juju == 0.5 | copper == 25 & juju == 0.5])
+Growth_data_fig7 <- na.omit(GrowthDat_NoLn_use[copper == 0 & juju == 0 | copper == 25 & juju == 0 | copper == 0 & juju == 0.5 | copper == 25 & juju == 0.5])
+Age_data_fig7 <- na.omit(AgeDat_use[copper == 0 & juju == 0 | copper == 25 & juju == 0 | copper == 0 & juju == 0.5 | copper == 25 & juju == 0.5])
+
+## SIZE @ MATURITY
+# data normally distributed? 
+shapiro.test(Size_data_fig7$size_mat) # NO(!) > use wilcox.test()
+
+# t.test(size_mat ~ clone_type, data = Size_data_fig7)
+wilcox_SizeMat <- wilcox.test(size_mat ~ clone_type, data = Size_data_fig7[copper == 0 & juju == 0.5]) 
+wilcox_SizeMat
+
+Zscore = qnorm(wilcox_SizeMat$p.value/2)
+Zscore
+
+effectSize <- wilcox_effsize(size_mat ~ clone_type, data = Size_data_fig7[copper == 0 & juju == 0.5])
+effectSize
+
+# [copper == 0 & juju == 0]
+# (Z = -2.402412, effect size = 0.467, p-value = 0.01629) **
+
+# [copper == 25 & juju == 0]
+# (Z = -0.08365173, effect size = 0.0439, p-value = 0.9333)
+
+# [copper == 25 & juju == 0.5]
+# (Z = -2.486406, effect size = 0.312, p-value = 0.2325)
+
+# [copper == 0 & juju == 0.5]
+# (Z = -0.3717383, effect size = 0.0948, p-value = 0.7101)
+
+
+## SOMATIC GROWTH RATE
+# data normally distributed? 
+shapiro.test(Growth_data_fig7$growth_mat_NoLn) # NO(!) > use wilcox.test()
+
+# t.test(growth_mat_NoLn ~ clone_type, data = Growth_data_fig7)
+wilcox_GrowthMat <- wilcox.test(growth_mat_NoLn ~ clone_type, data = Growth_data_fig7[copper == 0 & juju == 0.5]) 
+wilcox_GrowthMat
+
+Zscore = qnorm(wilcox_GrowthMat$p.value/2)
+Zscore
+
+effectSize <- wilcox_effsize(growth_mat_NoLn ~ clone_type, data = Growth_data_fig7[copper == 0 & juju == 0.5])
+effectSize
+
+# [copper == 0 & juju == 0]
+# (Z = -2.770555, effect size = 0.523, p-value = 0.005596) ***
+
+# [copper == 25 & juju == 0]
+# (Z = -1.57922, effect size = 0.439, p-value = 0.1143)
+
+# [copper == 25 & juju == 0.5]
+# (Z = -3.481024, effect size = 0.786, p-value = 0.0004995) ***
+
+# [copper == 0 & juju == 0.5]
+# (Z = -0.2014007, effect size = 0.0568, p-value = 0.8404)
+
+
+## AGE @ MATURITY
+# data normally distributed? 
+shapiro.test(Age_data_fig7$age_mat) # NO(!) > use wilcox.test()
+
+# t.test(age_mat ~ clone_type, data = Age_data_fig7)
+wilcox_AgeMat <- wilcox.test(age_mat ~ clone_type, data = Age_data_fig7[copper == 0 & juju == 0.5]) 
+wilcox_AgeMat
+
+Zscore = qnorm(wilcox_AgeMat$p.value/2)
+Zscore
+
+effectSize <- wilcox_effsize(age_mat ~ clone_type, data = Age_data_fig7[copper == 0 & juju == 0.5])
+effectSize
+
+# [copper == 0 & juju == 0]
+# (Z = -0.1743115, effect size = 0.0391, p-value = 0.8616) 
+
+# [copper == 25 & juju == 0]
+# (Z = -1.653857, effect size = 0.449, p-value = 0.09816)
+
+# [copper == 25 & juju == 0.5]
+# (Z = -3.069801, effect size = 0.781, p-value = 0.002142) ***
+
+# [copper == 0 & juju == 0.5]
+# (Z = -0.6389078, effect size = 0.160, p-value = 0.5229)
+
+
+## Do different treatments induce a shift in low and high responders ?
+
+Size_data_fig7[, trt_group := ifelse(juju == 0 & copper == 0, "control", 
+                                     ifelse(juju == 0.5 & copper == 0, "highPred_noCu", 
+                                            ifelse(juju == 0 & copper == 25, "highCu_noPred", 
+                                                   ifelse(juju == 0.5 & copper == 25, "highCu_highPred", NA))))]
+
+Growth_data_fig7[, trt_group := ifelse(juju == 0 & copper == 0, "control", 
+                                     ifelse(juju == 0.5 & copper == 0, "highPred_noCu", 
+                                            ifelse(juju == 0 & copper == 25, "highCu_noPred", 
+                                                   ifelse(juju == 0.5 & copper == 25, "highCu_highPred", NA))))]
+
+
+Age_data_fig7[, trt_group := ifelse(juju == 0 & copper == 0, "control", 
+                                     ifelse(juju == 0.5 & copper == 0, "highPred_noCu", 
+                                            ifelse(juju == 0 & copper == 25, "highCu_noPred", 
+                                                   ifelse(juju == 0.5 & copper == 25, "highCu_highPred", NA))))]
+
+
+library(car)
+## SIZE @ MATURITY
+# LOWs
+SizeLOW_levene <- leveneTest(size_mat ~ trt_group, data = Size_data_fig7[clone_type == "low"]) 
+SizeLOW_levene # significant difference between variances
+SizeLOW_oneway <- oneway.test(size_mat ~ trt_group, data = Size_data_fig7[clone_type == "low"])
+SizeLOW_oneway # *** differences between treatment groups
+
+# ANOVA assumptions not ok, use Kruskal Wallis test
+kruskal.test(size_mat ~ trt_group, data = Size_data_fig7[clone_type == "low"])
+pairwise.wilcox.test(Size_data_fig7[clone_type == "low"]$size_mat,
+                     Size_data_fig7[clone_type == "low"]$trt_group,
+                     p.adjust.method = "BH")  # Copper exposure (with no added predator cue) is different from other three treatments
+
+
+# HIGHs
+SizeHIGH_levene <- leveneTest(size_mat ~ trt_group, data = Size_data_fig7[clone_type == "high"]) 
+SizeHIGH_levene # not significant difference between variances (but use same test for all groups, i.e. Kruskal Wallis)
+SizeHIGH_oneway <- oneway.test(size_mat ~ trt_group, data = Size_data_fig7[clone_type == "high"])
+SizeHIGH_oneway # *** differences between treatment groups
+
+SizeHIGH_aov <- aov(size_mat ~ trt_group, data = Size_data_fig7[clone_type == "high"])
+summary(SizeHIGH_aov)
+TukeyHSD(SizeHIGH_aov)
+
+
+# ANOVA assumptions not ok, use Kruskal Wallis test
+kruskal.test(size_mat ~ trt_group, data = Size_data_fig7[clone_type == "high"])
+pairwise.wilcox.test(Size_data_fig7[clone_type == "high"]$size_mat,
+                     Size_data_fig7[clone_type == "high"]$trt_group,
+                     p.adjust.method = "BH")  # Copper exposure (with no added predator cue) is different from other three treatments
+
+
+
+
+##################
+#### OLD CODE ####
+##################
+
+# ## ISSUE (!!)
+# # How can one extract predicitons from frailty term model (model 1) in order to get clone-specific effects???
+# # Based on https://stat.ethz.ch/R-manual/R-devel/library/survival/html/predict.coxph.html this might not be possible:
+# # "Models that contain a frailty term are a special case: due to the technical difficulty, 
+# # when there is a newdata argument the predictions will always be for a random effect of zero."
+# 
+# # Potential solution - use model w/ copper, juju and interaction term separately for each clone and extract predictions
+# 
+# ## clone-specific effects 
+# # C14
+# mod3_C14 <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "high_C14"]))
+# plot_model(mod3_C14, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
+# 
+# surv_newX_C14 <- expand.grid(
+#   juju = seq(0,0.5,length = 10),
+#   copper = seq(0,25, length = 10),  
+#   cloneID = "high_C14")
+# 
+# surv_C14_effects_lp <- predict(mod3_C14, type = "lp", newdata = surv_newX_C14, re.form = NA)  # linear prediction
+# surv_C14_effects_risk <- predict(mod3_C14, type = "risk", newdata = surv_newX_C14, re.form = NA)  # risk factor 
+# 
+# # housekeeping
+# surv_plotData_C14 <- data.table(surv_newX_C14, clone_effect_lp=surv_C14_effects_lp, clone_effect_risk=surv_C14_effects_risk)
+# 
+# 
+# # Chard
+# mod3_Chard <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "high_Chard"]))
+# plot_model(mod3_Chard, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
+# 
+# surv_newX_Chard <- expand.grid(
+#   juju = seq(0,0.5,length = 10),
+#   copper = seq(0,25, length = 10),  
+#   cloneID = "high_Chard")
+# 
+# surv_Chard_effects_lp <- predict(mod3_Chard, type = "lp", newdata = surv_newX_Chard, re.form = NA)  # linear prediction
+# surv_Chard_effects_risk <- predict(mod3_Chard, type = "risk", newdata = surv_newX_Chard, re.form = NA)  # risk factor 
+# 
+# # housekeeping
+# surv_plotData_Chard <- data.table(surv_newX_Chard, clone_effect_lp=surv_Chard_effects_lp, clone_effect_risk=surv_Chard_effects_risk)
+# 
+# 
+# # LD33
+# mod3_LD33 <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "high_LD33"]))
+# plot_model(mod3_LD33, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
+# 
+# surv_newX_LD33 <- expand.grid(
+#   juju = seq(0,0.5,length = 10),
+#   copper = seq(0,25, length = 10),  
+#   cloneID = "high_LD33")
+# 
+# surv_LD33_effects_lp <- predict(mod3_LD33, type = "lp", newdata = surv_newX_LD33, re.form = NA)  # linear prediction
+# surv_LD33_effects_risk <- predict(mod3_LD33, type = "risk", newdata = surv_newX_LD33, re.form = NA)  # risk factor 
+# 
+# # housekeeping
+# surv_plotData_LD33 <- data.table(surv_newX_LD33, clone_effect_lp=surv_LD33_effects_lp, clone_effect_risk=surv_LD33_effects_risk)
+# 
+# 
+# # D86A
+# mod3_D86A <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "low_D86A"]))
+# plot_model(mod3_D86A, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
+# 
+# surv_newX_D86A <- expand.grid(
+#   juju = seq(0,0.5,length = 10),
+#   copper = seq(0,25, length = 10),  
+#   cloneID = "low_D86A")
+# 
+# surv_D86A_effects_lp <- predict(mod3_D86A, type = "lp", newdata = surv_newX_D86A, re.form = NA)  # linear prediction
+# surv_D86A_effects_risk <- predict(mod3_D86A, type = "risk", newdata = surv_newX_D86A, re.form = NA)  # risk factor 
+# 
+# # housekeeping
+# surv_plotData_D86A <- data.table(surv_newX_D86A, clone_effect_lp=surv_D86A_effects_lp, clone_effect_risk=surv_D86A_effects_risk)
+# 
+# 
+# # D87A
+# mod3_D87A <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "low_D87A"]))
+# plot_model(mod3_D87A, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
+# 
+# surv_newX_D87A <- expand.grid(
+#   juju = seq(0,0.5,length = 10),
+#   copper = seq(0,25, length = 10),  
+#   cloneID = "low_D87A")
+# 
+# surv_D87A_effects_lp <- predict(mod3_D87A, type = "lp", newdata = surv_newX_D87A, re.form = NA)  # linear prediction
+# surv_D87A_effects_risk <- predict(mod3_D87A, type = "risk", newdata = surv_newX_D87A, re.form = NA)  # risk factor 
+# 
+# # housekeeping
+# surv_plotData_D87A <- data.table(surv_newX_D87A, clone_effect_lp=surv_D87A_effects_lp, clone_effect_risk=surv_D87A_effects_risk)
+# 
+# 
+# # Cyril
+# mod3_Cyril <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "low_Cyril"]))
+# plot_model(mod3_Cyril, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
+# 
+# surv_newX_Cyril <- expand.grid(
+#   juju = seq(0,0.5,length = 10),
+#   copper = seq(0,25, length = 10),  
+#   cloneID = "low_Cyril")
+# 
+# surv_Cyril_effects_lp <- predict(mod3_Cyril, type = "lp", newdata = surv_newX_Cyril, re.form = NA)  # linear prediction
+# surv_Cyril_effects_risk <- predict(mod3_Cyril, type = "risk", newdata = surv_newX_Cyril, re.form = NA)  # risk factor 
+# 
+# # housekeeping
+# surv_plotData_Cyril <- data.table(surv_newX_Cyril, clone_effect_lp=surv_Cyril_effects_lp, clone_effect_risk=surv_Cyril_effects_risk)
+# 
+# 
+# # combine all clone_effects
+# surv_clone_plotData <- as.data.table(rbind(surv_plotData_C14, surv_plotData_Chard, surv_plotData_LD33,
+#                                            surv_plotData_D86A, surv_plotData_D87A, surv_plotData_Cyril))
+
+
+# # alternative plot for clone-specific responses: each panel gets its own colour legend.... (might be handy if we need to plot risk factors - instead of linear predictions)
+# transform(surv_clone_plotData,
+#                             cloneID = factor(cloneID, levels=c('high_C14', 'high_Chard', 'high_LD33', 'low_D86A', 'low_D87A', 'low_Cyril'))) %>%
+#                   
+#                             group_split(cloneID) %>%
+#                   
+#                             map(
+#                               ~ggplot(., aes(juju, copper)) +
+#                                 geom_raster(aes(fill = clone_effect_risk), interpolate = TRUE) +
+#                                 scale_fill_continuous(type = "viridis") +
+#                                 scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
+#                                 labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
+#                                 facet_grid(~ cloneID) +
+#                                 theme(rect = element_rect(fill = "transparent"),
+#                                       panel.grid.major = element_line(colour = "grey70", size=0.25),
+#                                       panel.grid.minor = element_line(colour = "grey90", size=0.1),
+#                                       panel.background = element_rect(fill = "transparent",colour = NA),
+#                                       plot.background = element_rect(fill = "transparent",colour = NA),
+#                                       axis.line = element_line(size = 1),
+#                                       axis.title.x = element_text(size=12, family='Arial'),
+#                                       axis.title.y = element_text(size=12, family='Arial'),
+#                                       axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
+#                                       axis.text = element_text(size=12, family='Arial'),
+#                                       strip.text.x = element_text(size =10, color = "black"),
+#                                       strip.text.y = element_text(size =10, color = "black"),
+#                                       panel.spacing.x = unit(4, "mm"),
+#                                       panel.spacing.y = unit(1, "mm"))
+#                   
+#                             ) %>%
+#                             plot_grid()  # can't get this to work: plot_grid(plotlist = ., align = 'hv', ncol = 3)
 
