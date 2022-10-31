@@ -1,5 +1,5 @@
 # surface design predation & copper / SHF-DFG project
-# update DB 18 August 2022
+# update DB 31 October 2022
 
 # packages
 library(data.table)
@@ -163,6 +163,7 @@ AgeDat.ag <- na.omit(AgeDat_use) %>%
 
 
 
+
 ###################################
 #### CLONE ID AS RANDOM EFFECT ####
 ###################################
@@ -207,7 +208,7 @@ plot_ind1 <- ggplot(transform(indSum_1, clone = factor(clone, levels=c('C14', 'C
                 geom_errorbar(width = 0, size = 0.5)+
                 facet_wrap(~clone)+
                 scale_x_continuous(breaks=c(0,0.25,0.5)) +
-                labs(y=expression(mean~induction[max]), x=expression(juju~(µl~ml^{-1}))) +
+                labs(y=expression(mean~induction[max]~("%")), x=expression(juju~(µl~ml^{-1}))) +
                 ylim(0,110) +
                 theme(rect = element_rect(fill = "transparent"),
                       panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -235,7 +236,7 @@ plot_ind2 <- ggplot(transform(indSum_2, clone = factor(clone, levels=c('C14', 'C
                 geom_errorbar(width = 0, size = 0.5)+
                 facet_wrap(~clone)+
                 scale_x_continuous(breaks=c(0,0.25,0.5)) +
-                labs(y=expression(mean~induction[max]), x=expression(juju~(µl~ml^{-1}))) +
+                labs(y=expression(mean~induction[max]~("%")), x=expression(juju~(µl~ml^{-1}))) +
                 ylim(0,110) +
                 theme(rect = element_rect(fill = "transparent"),
                       panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -263,7 +264,7 @@ plot_ind3 <- ggplot(transform(indSum_3, clone = factor(clone, levels=c('C14', 'C
                 geom_errorbar(width = 0, size = 0.5)+
                 facet_wrap(~clone)+
                 scale_x_continuous(breaks=c(0,0.25,0.5)) +
-                labs(y=expression(mean~induction[max]), x=expression(juju~(µl~ml^{-1}))) +
+                labs(y=expression(mean~induction[max]~("%")), x=expression(juju~(µl~ml^{-1}))) +
                 ylim(0,110) +
                 theme(rect = element_rect(fill = "transparent"),
                       panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -291,7 +292,7 @@ plot_ind4 <- ggplot(transform(indSum_4, clone = factor(clone, levels=c('C14', 'C
                 geom_errorbar(width = 0, size = 0.5)+
                 facet_wrap(~clone)+
                 scale_x_continuous(breaks=c(0,0.25,0.5)) +
-                labs(y=expression(mean~induction[max]), x=expression(juju~(µl~ml^{-1}))) +
+                labs(y=expression(mean~induction[max]~("%")), x=expression(juju~(µl~ml^{-1}))) +
                 ylim(0,110) +
                 theme(rect = element_rect(fill = "transparent"),
                       panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -347,7 +348,7 @@ plot_ind1_ped <- ggplot(transform(indSum_1_ped, clone = factor(clone, levels=c('
                     geom_errorbar(width = 0, size = 0.5)+
                     facet_wrap(~clone)+
                     scale_x_continuous(breaks=c(0,0.25,0.5)) +
-                    labs(y=expression(mean~induction[max]), x=expression(juju~(µl~ml^{-1}))) +
+                    labs(y=expression(mean~induction[max]~("%")), x=expression(juju~(µl~ml^{-1}))) +
                     ylim(0,60) +
                     theme(rect = element_rect(fill = "transparent"),
                           panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -375,7 +376,7 @@ plot_ind2_ped <- ggplot(transform(indSum_2_ped, clone = factor(clone, levels=c('
                     geom_errorbar(width = 0, size = 0.5)+
                     facet_wrap(~clone)+
                     scale_x_continuous(breaks=c(0,0.25,0.5)) +
-                    labs(y=expression(mean~induction[max]), x=expression(juju~(µl~ml^{-1}))) +
+                    labs(y=expression(mean~induction[max]~("%")), x=expression(juju~(µl~ml^{-1}))) +
                     ylim(0,60) +
                     theme(rect = element_rect(fill = "transparent"),
                           panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -403,7 +404,7 @@ plot_ind3_ped <- ggplot(transform(indSum_3_ped, clone = factor(clone, levels=c('
                     geom_errorbar(width = 0, size = 0.5)+
                     facet_wrap(~clone)+
                     scale_x_continuous(breaks=c(0,0.25,0.5)) +
-                    labs(y=expression(mean~induction[max]), x=expression(juju~(µl~ml^{-1}))) +
+                    labs(y=expression(mean~induction[max]~("%")), x=expression(juju~(µl~ml^{-1}))) +
                     ylim(0,60) +
                     theme(rect = element_rect(fill = "transparent"),
                           panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -431,7 +432,7 @@ plot_ind4_ped <- ggplot(transform(indSum_4_ped, clone = factor(clone, levels=c('
                     geom_errorbar(width = 0, size = 0.5)+
                     facet_wrap(~clone)+
                     scale_x_continuous(breaks=c(0,0.25,0.5)) +
-                    labs(y=expression(mean~induction[max]), x=expression(juju~(µl~ml^{-1}))) + 
+                    labs(y=expression(mean~induction[max]~("%")), x=expression(juju~(µl~ml^{-1}))) + 
                     ylim(0,60) +
                     theme(rect = element_rect(fill = "transparent"),
                           panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -486,7 +487,7 @@ plot_ind1_nteeth <- ggplot(transform(indSum_1_nteeth, clone = factor(clone, leve
                       geom_errorbar(width = 0, size = 0.5)+
                       facet_wrap(~clone)+
                       scale_x_continuous(breaks=c(0,0.25,0.5)) +
-                      labs(y=expression(mean~induction[max]), x=expression(juju~(µl~ml^{-1}))) +
+                      labs(y=expression(mean~induction[max]~("%")), x=expression(juju~(µl~ml^{-1}))) +
                       ylim(0,60) +
                       theme(rect = element_rect(fill = "transparent"),
                             panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -514,7 +515,7 @@ plot_ind2_nteeth <- ggplot(transform(indSum_2_nteeth, clone = factor(clone, leve
                       geom_errorbar(width = 0, size = 0.5)+
                       facet_wrap(~clone)+
                       scale_x_continuous(breaks=c(0,0.25,0.5)) +
-                      labs(y=expression(mean~induction[max]), x=expression(juju~(µl~ml^{-1}))) +
+                      labs(y=expression(mean~induction[max]~("%")), x=expression(juju~(µl~ml^{-1}))) +
                       ylim(0,60) +
                       theme(rect = element_rect(fill = "transparent"),
                             panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -542,7 +543,7 @@ plot_ind3_nteeth <- ggplot(transform(indSum_3_nteeth, clone = factor(clone, leve
                       geom_errorbar(width = 0, size = 0.5)+
                       facet_wrap(~clone)+
                       scale_x_continuous(breaks=c(0,0.25,0.5)) +
-                      labs(y=expression(mean~induction[max]), x=expression(juju~(µl~ml^{-1}))) +
+                      labs(y=expression(mean~induction[max]~("%")), x=expression(juju~(µl~ml^{-1}))) +
                       ylim(0,60) +
                       theme(rect = element_rect(fill = "transparent"),
                             panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -570,7 +571,7 @@ plot_ind4_nteeth <- ggplot(transform(indSum_4_nteeth, clone = factor(clone, leve
                       geom_errorbar(width = 0, size = 0.5)+
                       facet_wrap(~clone)+
                       scale_x_continuous(breaks=c(0,0.25,0.5)) +
-                      labs(y=expression(mean~induction[max]), x=expression(juju~(µl~ml^{-1}))) +
+                      labs(y=expression(mean~induction[max]~("%")), x=expression(juju~(µl~ml^{-1}))) +
                       ylim(0,60) +
                       theme(rect = element_rect(fill = "transparent"),
                             panel.grid.major = element_line(colour = "grey70", size=0.25),
@@ -765,7 +766,7 @@ ind_average <- ggplot(transform(IndDat.ag,
                   geom_line(aes(linetype=cloneID),size = 0.7) +
                   scale_linetype_manual(values=c("twodash","twodash","twodash","solid","solid","solid")) +
                   scale_color_viridis(discrete = TRUE, option = "C")+
-                  labs(y=expression(mean~induction[max]), x=expression(predator~cue~(µl~ml^{-1}))) +
+                  labs(y=expression(mean~induction[max]~("%")), x=expression(predator~cue~(µl~ml^{-1}))) +
                   scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                   ylim(0,105) +
                   facet_wrap(~copper, nrow = 1) +
@@ -820,7 +821,7 @@ ind_juju_clone <- ggplot(transform(ind_plotData_0Cu,
                       geom_line(aes(linetype=cloneID),size = 1) + 
                       scale_linetype_manual(values=c("twodash","twodash","twodash","solid","solid","solid")) +
                       scale_color_viridis(discrete = TRUE, option = "C")+
-                      labs(y=expression(mean~induction[max]), x=expression(predator~cue~(µl~ml^{-1}))) +
+                      labs(y=expression(mean~induction[max]~("%")), x=expression(predator~cue~(µl~ml^{-1}))) +
                       scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                       ylim(0,105) +
                       theme(rect = element_rect(fill = "transparent"),
@@ -844,7 +845,7 @@ ind_copper_clone <- ggplot(transform(ind_plotData_0JuJu,
                       geom_line(aes(linetype=cloneID),size = 1) + 
                       scale_linetype_manual(values=c("twodash","twodash","twodash","solid","solid","solid")) +
                       scale_color_viridis(discrete = TRUE, option = "C")+
-                      labs(y=expression(mean~induction[max]), x=expression(copper~(µg~L^{-1}))) +
+                      labs(y=expression(mean~induction[max]~("%")), x=expression(copper~(µg~L^{-1}))) +
                       scale_x_continuous(breaks=c(0,5,10,15,20,25)) +
                       ylim(0,105) +
                       theme(rect = element_rect(fill = "transparent"),
@@ -1824,6 +1825,8 @@ dev.off()
 
 
 
+
+
 #####################################
 #### MAIN EFFECTS - Panels D & E ####
 #####################################
@@ -1940,6 +1943,8 @@ Anova(surv_mod_CU, type = "II")
 
 
 
+
+
 #################################
 #### CONTRASTING LOW vs HIGH ####
 #################################
@@ -2015,7 +2020,7 @@ ind_juju_clone <- ggplot(ind_plotData[copper == 0], aes(x = juju, y = fixed_effe
                           geom_line(aes(linetype=clone_type),size = 1) + 
                           scale_linetype_manual(values=c("twodash","twodash")) +
                           scale_color_manual(values=c("#000000","#FF0000"))+
-                          labs(y=expression(mean~induction[max]), x=expression(predator~cue~(µl~ml^{-1}))) +
+                          labs(y=expression(mean~induction[max]~("%")), x=expression(predator~cue~(µl~ml^{-1}))) +
                           scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
                           ylim(0,105) +
                           theme(rect = element_rect(fill = "transparent"),
@@ -2038,7 +2043,7 @@ ind_copper_clone <- ggplot(ind_plotData[juju == 0], aes(x = copper, y = fixed_ef
                             geom_line(aes(linetype=clone_type),size = 1) +  
                             scale_linetype_manual(values=c("twodash","twodash")) +
                             scale_color_manual(values=c("#000000","#FF0000"))+
-                            labs(y=expression(mean~induction[max]), x=expression(copper~(µg~L^{-1}))) +
+                            labs(y=expression(mean~induction[max]~("%")), x=expression(copper~(µg~L^{-1}))) +
                             scale_x_continuous(breaks=c(0,5,10,15,20,25)) +
                             ylim(0,105) +
                             theme(rect = element_rect(fill = "transparent"),
@@ -2615,6 +2620,8 @@ dev.off()
 
 
 
+
+
 #####################################
 #### MAIN EFFECTS - Panels B & C ####
 #####################################
@@ -2725,6 +2732,8 @@ Anova(surv_mod_CU_HvsL, type = "II")
 
 # Chisq = 36.744, df = 1, p = 1.347e-09
 # copper has strong positive effect (increase of risk score, thus higher probability of death)
+
+
 
 
 
@@ -2911,14 +2920,132 @@ Ind_Age[, copper_juju := c('Cu0 - Juju0',
 # Induction vs Size
 Ind_Size_data <- Ind_Size[copper_juju %in% c("Cu0 - Juju0", "Cu25 - Juju0", "Cu0 - Juju0.5", "Cu25 - Juju0.5")]
 
-Ind_size <- ggplot(Ind_Size_data, aes(x = meanInd, y = meanSize, colour = clone_type)) + 
-                    geom_line(aes(group = copper_juju), linetype="twodash", colour="darkgrey") + 
-                    geom_point(colour = rep(c("#FF0000", "#000000"),4), size = 3) + 
-                    geom_errorbar(aes(ymin = Size_min, ymax = Size_max), width = 2, colour = rep(c("#FF0000", "#000000"),4), size = 0.5) + 
-                    geom_errorbarh(aes(xmin = Ind_min, xmax = Ind_max), height = 0.01, colour = rep(c("#FF0000", "#000000"),4), size = 0.5) + 
-                    labs(y=expression(size[maturity]~(mm)), x=expression(mean~induction[max])) +
-                    ylim(1.4, 2.1) +
-                    xlim(0, 100) +
+## Isolate Data
+Ind_Size_work <- transform(Ind_Size_data, copper_juju = factor(copper_juju, levels=c("Cu0 - Juju0", "Cu0 - Juju0.5", "Cu25 - Juju0.5", "Cu25 - Juju0")))
+
+## Isolate Controls - start point for segments
+Ind_Size_x1 <- Ind_Size_work %>% 
+  filter(copper_juju == "Cu0 - Juju0") %>% 
+  pull(meanSize)
+Ind_Size_y1 <- Ind_Size_work %>% 
+  filter(copper_juju == "Cu0 - Juju0") %>% 
+  pull(meanInd)
+
+## create initial data frame for segments
+# with start points replicated 3 times for three segments to be drawn
+Ind_Size_segs <- data.frame(Ind_Size_x1 = rep(Ind_Size_x1,each = 3), Ind_Size_y1 = rep(Ind_Size_y1,each = 3))
+
+## Isolate, arrange and grab endpoints for segments by hi/low 
+Ind_Size_x2 <- Ind_Size_work %>% 
+  filter(copper_juju != "Cu0 - Juju0") %>% 
+  select(clone_type, meanInd, meanSize,copper_juju) %>% 
+  arrange(clone_type) %>% 
+  pull(meanSize)
+
+Ind_Size_y2 <- Ind_Size_work %>% 
+  filter(copper_juju != "Cu0 - Juju0") %>% 
+  select(clone_type, meanInd, meanSize,copper_juju) %>% 
+  arrange(clone_type) %>% 
+  pull(meanInd)
+
+# add to segment data frame
+Ind_Size_segs$x2 <- Ind_Size_x2
+Ind_Size_segs$y2 <- Ind_Size_y2
+
+## check segments data frame
+Ind_Size_segs
+
+# use segments data frame in plot
+Ind_size <- ggplot(Ind_Size_work,aes(y = meanInd, x = meanSize)) + 
+                  geom_point(colour = rep(c("#FF0000", "#808080"),4), size = 2.5)+
+                  
+                  # add horizontal and vertical errorbars
+                  geom_errorbarh(aes(xmin = Size_min, xmax = Size_max), height = 2, 
+                                 colour = rep(c("#FF0000", "#808080"),4), size = 0.2) + 
+                  geom_errorbar(aes(ymin = Ind_min, ymax = Ind_max), width = 0.01, 
+                                colour = rep(c("#FF0000", "#808080"),4), size = 0.2)+
+                  
+                  # add segments with new segments data frame
+                  geom_segment(data = Ind_Size_segs, aes(x = Ind_Size_x1, y = Ind_Size_y1, xend = Ind_Size_x2, yend = Ind_Size_y2),
+                               linetype = 'dotted', arrow = arrow(type = 'closed', 
+                                                                  length = unit(0.2, "cm")))+
+                  # add theme
+                  labs(x=expression(size[maturity]~(days)), y=expression(mean~induction[max]~("%"))) +
+                  xlim(1.4, 2.1) +
+                  ylim(0, 100) +
+                  theme(rect = element_rect(fill = "transparent"),
+                        panel.grid.major = element_line(colour = "grey70", size=0.25),
+                        panel.grid.minor = element_line(colour = "grey90", size=0.1),
+                        panel.background = element_rect(fill = "transparent",colour = NA),
+                        plot.background = element_rect(fill = "transparent",colour = NA), 
+                        axis.line = element_line(size = 1),
+                        axis.title.x = element_text(size=12),
+                        axis.title.y = element_text(size=12),
+                        # axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
+                        axis.text = element_text(size=12),
+                        strip.text.x = element_text(size =10, color = "black"),
+                        strip.text.y = element_text(size =10, color = "black"),
+                        panel.spacing.x = unit(4, "mm"),
+                        panel.spacing.y = unit(1, "mm"))
+
+
+
+# Induction vs GrowthRate
+Ind_Growth_data <- Ind_Growth[copper_juju %in% c("Cu0 - Juju0", "Cu25 - Juju0", "Cu0 - Juju0.5", "Cu25 - Juju0.5")]
+
+## Isolate Data
+Ind_Growth_work <- transform(Ind_Growth_data, copper_juju = factor(copper_juju, levels=c("Cu0 - Juju0", "Cu0 - Juju0.5", "Cu25 - Juju0.5", "Cu25 - Juju0")))
+
+## Isolate Controls - start point for segments
+Ind_Growth_x1 <- Ind_Growth_work %>% 
+  filter(copper_juju == "Cu0 - Juju0") %>% 
+  pull(meanGrowth)
+Ind_Growth_y1 <- Ind_Growth_work %>% 
+  filter(copper_juju == "Cu0 - Juju0") %>% 
+  pull(meanInd)
+
+## create initial data frame for segments
+# with start points replicated 3 times for three segments to be drawn
+Ind_Growth_segs <- data.frame(Ind_Growth_x1 = rep(Ind_Growth_x1,each = 3), Ind_Growth_y1 = rep(Ind_Growth_y1,each = 3))
+
+## Isolate, arrange and grab endpoints for segments by hi/low 
+Ind_Growth_x2 <- Ind_Growth_work %>% 
+  filter(copper_juju != "Cu0 - Juju0") %>% 
+  select(clone_type, meanInd, meanGrowth,copper_juju) %>% 
+  arrange(clone_type) %>% 
+  pull(meanGrowth)
+
+Ind_Growth_y2 <- Ind_Growth_work %>% 
+  filter(copper_juju != "Cu0 - Juju0") %>% 
+  select(clone_type, meanInd, meanGrowth,copper_juju) %>% 
+  arrange(clone_type) %>% 
+  pull(meanInd)
+
+# add to segment data frame
+Ind_Growth_segs$x2 <- Ind_Growth_x2
+Ind_Growth_segs$y2 <- Ind_Growth_y2
+
+## check segments data frame
+Ind_Growth_segs
+
+# use segments data frame in plot
+Ind_growth <- ggplot(Ind_Growth_work,aes(y = meanInd, x = meanGrowth)) + 
+                    geom_point(colour = rep(c("#FF0000", "#808080"),4), size = 2.5)+
+                    
+                    # add horizontal and vertical errorbars
+                    geom_errorbarh(aes(xmin = Growth_min, xmax = Growth_max), height = 2, 
+                                   colour = rep(c("#FF0000", "#808080"),4), size = 0.2) + 
+                    geom_errorbar(aes(ymin = Ind_min, ymax = Ind_max), width = 0.01, 
+                                  colour = rep(c("#FF0000", "#808080"),4), size = 0.2)+
+                    
+                    # add segments with new segments data frame
+                    geom_segment(data = Ind_Growth_segs, aes(x = Ind_Growth_x1, y = Ind_Growth_y1, xend = Ind_Growth_x2, yend = Ind_Growth_y2),
+                                 linetype = 'dotted', arrow = arrow(type = 'closed', 
+                                                                    length = unit(0.2, "cm")))+
+                    # add theme
+                    labs(x=expression(growth~rate~(mm~d^{-1})), y=expression(mean~induction[max]~("%"))) +
+                    xlim(0.05, 0.21) +
+                    ylim(0, 100) +
                     theme(rect = element_rect(fill = "transparent"),
                           panel.grid.major = element_line(colour = "grey70", size=0.25),
                           panel.grid.minor = element_line(colour = "grey90", size=0.1),
@@ -2935,59 +3062,78 @@ Ind_size <- ggplot(Ind_Size_data, aes(x = meanInd, y = meanSize, colour = clone_
                           panel.spacing.y = unit(1, "mm"))
 
 
-# Induction vs GrowthRate
-Ind_Growth_data <- Ind_Growth[copper_juju %in% c("Cu0 - Juju0", "Cu25 - Juju0", "Cu0 - Juju0.5", "Cu25 - Juju0.5")]
-
-Ind_growth <- ggplot(Ind_Growth_data, aes(y = meanInd, x = meanGrowth, colour = clone_type)) + 
-                        geom_line(aes(group = clone_type), linetype="twodash", colour="darkgrey") + 
-                        geom_point(colour = rep(c("#FF0000", "#000000"),4), size = 3) + 
-                        geom_errorbarh(aes(xmin = Growth_min, xmax = Growth_max), height = 2, colour = rep(c("#FF0000", "#000000"),4), size = 0.5) + 
-                        geom_errorbar(aes(ymin = Ind_min, ymax = Ind_max), width = 0.01, colour = rep(c("#FF0000", "#000000"),4), size = 0.5) + 
-                        labs(x=expression(growth~rate~(mm~d^{-1})), y=expression(mean~induction[max])) +
-                        xlim(0.05, 0.21) +
-                        ylim(0, 100) +
-                        theme(rect = element_rect(fill = "transparent"),
-                              panel.grid.major = element_line(colour = "grey70", size=0.25),
-                              panel.grid.minor = element_line(colour = "grey90", size=0.1),
-                              panel.background = element_rect(fill = "transparent",colour = NA),
-                              plot.background = element_rect(fill = "transparent",colour = NA), 
-                              axis.line = element_line(size = 1),
-                              axis.title.x = element_text(size=12),
-                              axis.title.y = element_text(size=12),
-                              # axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                              axis.text = element_text(size=12),
-                              strip.text.x = element_text(size =10, color = "black"),
-                              strip.text.y = element_text(size =10, color = "black"),
-                              panel.spacing.x = unit(4, "mm"),
-                              panel.spacing.y = unit(1, "mm"))
-
 
 # Induction vs Age
 Ind_Age_data <- Ind_Age[copper_juju %in% c("Cu0 - Juju0", "Cu25 - Juju0", "Cu0 - Juju0.5", "Cu25 - Juju0.5")]
 
+## Isolate Data
+Ind_Age_work <- transform(Ind_Age_data, copper_juju = factor(copper_juju, levels=c("Cu0 - Juju0", "Cu0 - Juju0.5", "Cu25 - Juju0.5", "Cu25 - Juju0")))
 
-Ind_age <- ggplot(Ind_Age_data, aes(y = meanInd, x = meanAge, colour = clone_type)) + 
-  geom_line(aes(group = clone_type), linetype="twodash", colour="darkgrey") + 
-  geom_point(colour = rep(c("#FF0000", "#000000"),4), size = 3) + 
-                              geom_errorbarh(aes(xmin = Age_min, xmax = Age_max), height = 2, colour = rep(c("#FF0000", "#000000"),4), size = 0.5) + 
-                              geom_errorbar(aes(ymin = Ind_min, ymax = Ind_max), width = 0.01, colour = rep(c("#FF0000", "#000000"),4), size = 0.5) + 
-                              labs(x=expression(age[maturity]~(days)), y=expression(mean~induction[max])) +
-                              xlim(4, 13) +
-                              ylim(0, 100) +
-                              theme(rect = element_rect(fill = "transparent"),
-                                    panel.grid.major = element_line(colour = "grey70", size=0.25),
-                                    panel.grid.minor = element_line(colour = "grey90", size=0.1),
-                                    panel.background = element_rect(fill = "transparent",colour = NA),
-                                    plot.background = element_rect(fill = "transparent",colour = NA), 
-                                    axis.line = element_line(size = 1),
-                                    axis.title.x = element_text(size=12),
-                                    axis.title.y = element_text(size=12),
-                                    # axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-                                    axis.text = element_text(size=12),
-                                    strip.text.x = element_text(size =10, color = "black"),
-                                    strip.text.y = element_text(size =10, color = "black"),
-                                    panel.spacing.x = unit(4, "mm"),
-                                    panel.spacing.y = unit(1, "mm"))
+## Isolate Controls - start point for segments
+Ind_Age_x1 <- Ind_Age_work %>% 
+  filter(copper_juju == "Cu0 - Juju0") %>% 
+  pull(meanAge)
+Ind_Age_y1 <- Ind_Age_work %>% 
+  filter(copper_juju == "Cu0 - Juju0") %>% 
+  pull(meanInd)
+
+## create initial data frame for segments
+# with start points replicated 3 times for three segments to be drawn
+Ind_Age_segs <- data.frame(Ind_Age_x1 = rep(Ind_Age_x1,each = 3), Ind_Age_y1 = rep(Ind_Age_y1,each = 3))
+
+## Isolate, arrange and grab endpoints for segments by hi/low 
+Ind_Age_x2 <- Ind_Age_work %>% 
+  filter(copper_juju != "Cu0 - Juju0") %>% 
+  select(clone_type, meanInd, meanAge,copper_juju) %>% 
+  arrange(clone_type) %>% 
+  pull(meanAge)
+
+Ind_Age_y2 <- Ind_Age_work %>% 
+  filter(copper_juju != "Cu0 - Juju0") %>% 
+  select(clone_type, meanInd, meanAge,copper_juju) %>% 
+  arrange(clone_type) %>% 
+  pull(meanInd)
+
+# add to segment data frame
+Ind_Age_segs$x2 <- Ind_Age_x2
+Ind_Age_segs$y2 <- Ind_Age_y2
+
+## check segments data frame
+Ind_Age_segs
+
+# use segments data frame in plot
+Ind_age <- ggplot(Ind_Age_work,aes(y = meanInd, x = meanAge)) + 
+                  geom_point(colour = rep(c("#FF0000", "#808080"),4), size = 2.5)+
+                  
+                  # add horizontal and vertical errorbars
+                  geom_errorbarh(aes(xmin = Age_min, xmax = Age_max), height = 2, 
+                                 colour = rep(c("#FF0000", "#808080"),4), size = 0.2) + 
+                  geom_errorbar(aes(ymin = Ind_min, ymax = Ind_max), width = 0.01, 
+                                colour = rep(c("#FF0000", "#808080"),4), size = 0.2)+
+                  
+                  # add segments with new segments data frame
+                  geom_segment(data = Ind_Age_segs, aes(x = Ind_Age_x1, y = Ind_Age_y1, xend = Ind_Age_x2, yend = Ind_Age_y2),
+                               linetype = 'dotted', arrow = arrow(type = 'closed', 
+                                                  length = unit(0.2, "cm")))+
+ 
+                  labs(x=expression(age[maturity]~(days)), y=expression(mean~induction[max]~("%"))) +
+                  xlim(4, 13) +
+                  ylim(0, 100) +
+                  theme(rect = element_rect(fill = "transparent"),
+                        panel.grid.major = element_line(colour = "grey70", size=0.25),
+                        panel.grid.minor = element_line(colour = "grey90", size=0.1),
+                        panel.background = element_rect(fill = "transparent",colour = NA),
+                        plot.background = element_rect(fill = "transparent",colour = NA), 
+                        axis.line = element_line(size = 1),
+                        axis.title.x = element_text(size=12),
+                        axis.title.y = element_text(size=12),
+                        # axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
+                        axis.text = element_text(size=12),
+                        strip.text.x = element_text(size =10, color = "black"),
+                        strip.text.y = element_text(size =10, color = "black"),
+                        panel.spacing.x = unit(4, "mm"),
+                        panel.spacing.y = unit(1, "mm"))
+
 
 
 ## all plots together
@@ -3003,292 +3149,4 @@ dev.off()
 
 
 
-## stats for figure 7 ---------------------
-
-## Do LOW and HIGH responders differ?
-
-# data to use:
-Size_data_fig7 <- na.omit(SizeDat_use[copper == 0 & juju == 0 | copper == 25 & juju == 0 | copper == 0 & juju == 0.5 | copper == 25 & juju == 0.5])
-Growth_data_fig7 <- na.omit(GrowthDat_NoLn_use[copper == 0 & juju == 0 | copper == 25 & juju == 0 | copper == 0 & juju == 0.5 | copper == 25 & juju == 0.5])
-Age_data_fig7 <- na.omit(AgeDat_use[copper == 0 & juju == 0 | copper == 25 & juju == 0 | copper == 0 & juju == 0.5 | copper == 25 & juju == 0.5])
-
-## SIZE @ MATURITY
-# data normally distributed? 
-shapiro.test(Size_data_fig7$size_mat) # NO(!) > use wilcox.test()
-
-# t.test(size_mat ~ clone_type, data = Size_data_fig7)
-wilcox_SizeMat <- wilcox.test(size_mat ~ clone_type, data = Size_data_fig7[copper == 0 & juju == 0.5]) 
-wilcox_SizeMat
-
-Zscore = qnorm(wilcox_SizeMat$p.value/2)
-Zscore
-
-effectSize <- wilcox_effsize(size_mat ~ clone_type, data = Size_data_fig7[copper == 0 & juju == 0.5])
-effectSize
-
-# [copper == 0 & juju == 0]
-# (Z = -2.402412, effect size = 0.467, p-value = 0.01629) **
-
-# [copper == 25 & juju == 0]
-# (Z = -0.08365173, effect size = 0.0439, p-value = 0.9333)
-
-# [copper == 25 & juju == 0.5]
-# (Z = -2.486406, effect size = 0.312, p-value = 0.2325)
-
-# [copper == 0 & juju == 0.5]
-# (Z = -0.3717383, effect size = 0.0948, p-value = 0.7101)
-
-
-## SOMATIC GROWTH RATE
-# data normally distributed? 
-shapiro.test(Growth_data_fig7$growth_mat_NoLn) # NO(!) > use wilcox.test()
-
-# t.test(growth_mat_NoLn ~ clone_type, data = Growth_data_fig7)
-wilcox_GrowthMat <- wilcox.test(growth_mat_NoLn ~ clone_type, data = Growth_data_fig7[copper == 0 & juju == 0.5]) 
-wilcox_GrowthMat
-
-Zscore = qnorm(wilcox_GrowthMat$p.value/2)
-Zscore
-
-effectSize <- wilcox_effsize(growth_mat_NoLn ~ clone_type, data = Growth_data_fig7[copper == 0 & juju == 0.5])
-effectSize
-
-# [copper == 0 & juju == 0]
-# (Z = -2.770555, effect size = 0.523, p-value = 0.005596) ***
-
-# [copper == 25 & juju == 0]
-# (Z = -1.57922, effect size = 0.439, p-value = 0.1143)
-
-# [copper == 25 & juju == 0.5]
-# (Z = -3.481024, effect size = 0.786, p-value = 0.0004995) ***
-
-# [copper == 0 & juju == 0.5]
-# (Z = -0.2014007, effect size = 0.0568, p-value = 0.8404)
-
-
-## AGE @ MATURITY
-# data normally distributed? 
-shapiro.test(Age_data_fig7$age_mat) # NO(!) > use wilcox.test()
-
-# t.test(age_mat ~ clone_type, data = Age_data_fig7)
-wilcox_AgeMat <- wilcox.test(age_mat ~ clone_type, data = Age_data_fig7[copper == 0 & juju == 0.5]) 
-wilcox_AgeMat
-
-Zscore = qnorm(wilcox_AgeMat$p.value/2)
-Zscore
-
-effectSize <- wilcox_effsize(age_mat ~ clone_type, data = Age_data_fig7[copper == 0 & juju == 0.5])
-effectSize
-
-# [copper == 0 & juju == 0]
-# (Z = -0.1743115, effect size = 0.0391, p-value = 0.8616) 
-
-# [copper == 25 & juju == 0]
-# (Z = -1.653857, effect size = 0.449, p-value = 0.09816)
-
-# [copper == 25 & juju == 0.5]
-# (Z = -3.069801, effect size = 0.781, p-value = 0.002142) ***
-
-# [copper == 0 & juju == 0.5]
-# (Z = -0.6389078, effect size = 0.160, p-value = 0.5229)
-
-
-## Do different treatments induce a shift in low and high responders ?
-
-Size_data_fig7[, trt_group := ifelse(juju == 0 & copper == 0, "control", 
-                                     ifelse(juju == 0.5 & copper == 0, "highPred_noCu", 
-                                            ifelse(juju == 0 & copper == 25, "highCu_noPred", 
-                                                   ifelse(juju == 0.5 & copper == 25, "highCu_highPred", NA))))]
-
-Growth_data_fig7[, trt_group := ifelse(juju == 0 & copper == 0, "control", 
-                                     ifelse(juju == 0.5 & copper == 0, "highPred_noCu", 
-                                            ifelse(juju == 0 & copper == 25, "highCu_noPred", 
-                                                   ifelse(juju == 0.5 & copper == 25, "highCu_highPred", NA))))]
-
-
-Age_data_fig7[, trt_group := ifelse(juju == 0 & copper == 0, "control", 
-                                     ifelse(juju == 0.5 & copper == 0, "highPred_noCu", 
-                                            ifelse(juju == 0 & copper == 25, "highCu_noPred", 
-                                                   ifelse(juju == 0.5 & copper == 25, "highCu_highPred", NA))))]
-
-
-library(car)
-## SIZE @ MATURITY
-# LOWs
-SizeLOW_levene <- leveneTest(size_mat ~ trt_group, data = Size_data_fig7[clone_type == "low"]) 
-SizeLOW_levene # significant difference between variances
-SizeLOW_oneway <- oneway.test(size_mat ~ trt_group, data = Size_data_fig7[clone_type == "low"])
-SizeLOW_oneway # *** differences between treatment groups
-
-# ANOVA assumptions not ok, use Kruskal Wallis test
-kruskal.test(size_mat ~ trt_group, data = Size_data_fig7[clone_type == "low"])
-pairwise.wilcox.test(Size_data_fig7[clone_type == "low"]$size_mat,
-                     Size_data_fig7[clone_type == "low"]$trt_group,
-                     p.adjust.method = "BH")  # Copper exposure (with no added predator cue) is different from other three treatments
-
-
-# HIGHs
-SizeHIGH_levene <- leveneTest(size_mat ~ trt_group, data = Size_data_fig7[clone_type == "high"]) 
-SizeHIGH_levene # not significant difference between variances (but use same test for all groups, i.e. Kruskal Wallis)
-SizeHIGH_oneway <- oneway.test(size_mat ~ trt_group, data = Size_data_fig7[clone_type == "high"])
-SizeHIGH_oneway # *** differences between treatment groups
-
-SizeHIGH_aov <- aov(size_mat ~ trt_group, data = Size_data_fig7[clone_type == "high"])
-summary(SizeHIGH_aov)
-TukeyHSD(SizeHIGH_aov)
-
-
-# ANOVA assumptions not ok, use Kruskal Wallis test
-kruskal.test(size_mat ~ trt_group, data = Size_data_fig7[clone_type == "high"])
-pairwise.wilcox.test(Size_data_fig7[clone_type == "high"]$size_mat,
-                     Size_data_fig7[clone_type == "high"]$trt_group,
-                     p.adjust.method = "BH")  # Copper exposure (with no added predator cue) is different from other three treatments
-
-
-
-
-##################
-#### OLD CODE ####
-##################
-
-# ## ISSUE (!!)
-# # How can one extract predicitons from frailty term model (model 1) in order to get clone-specific effects???
-# # Based on https://stat.ethz.ch/R-manual/R-devel/library/survival/html/predict.coxph.html this might not be possible:
-# # "Models that contain a frailty term are a special case: due to the technical difficulty, 
-# # when there is a newdata argument the predictions will always be for a random effect of zero."
-# 
-# # Potential solution - use model w/ copper, juju and interaction term separately for each clone and extract predictions
-# 
-# ## clone-specific effects 
-# # C14
-# mod3_C14 <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "high_C14"]))
-# plot_model(mod3_C14, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
-# 
-# surv_newX_C14 <- expand.grid(
-#   juju = seq(0,0.5,length = 10),
-#   copper = seq(0,25, length = 10),  
-#   cloneID = "high_C14")
-# 
-# surv_C14_effects_lp <- predict(mod3_C14, type = "lp", newdata = surv_newX_C14, re.form = NA)  # linear prediction
-# surv_C14_effects_risk <- predict(mod3_C14, type = "risk", newdata = surv_newX_C14, re.form = NA)  # risk factor 
-# 
-# # housekeeping
-# surv_plotData_C14 <- data.table(surv_newX_C14, clone_effect_lp=surv_C14_effects_lp, clone_effect_risk=surv_C14_effects_risk)
-# 
-# 
-# # Chard
-# mod3_Chard <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "high_Chard"]))
-# plot_model(mod3_Chard, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
-# 
-# surv_newX_Chard <- expand.grid(
-#   juju = seq(0,0.5,length = 10),
-#   copper = seq(0,25, length = 10),  
-#   cloneID = "high_Chard")
-# 
-# surv_Chard_effects_lp <- predict(mod3_Chard, type = "lp", newdata = surv_newX_Chard, re.form = NA)  # linear prediction
-# surv_Chard_effects_risk <- predict(mod3_Chard, type = "risk", newdata = surv_newX_Chard, re.form = NA)  # risk factor 
-# 
-# # housekeeping
-# surv_plotData_Chard <- data.table(surv_newX_Chard, clone_effect_lp=surv_Chard_effects_lp, clone_effect_risk=surv_Chard_effects_risk)
-# 
-# 
-# # LD33
-# mod3_LD33 <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "high_LD33"]))
-# plot_model(mod3_LD33, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
-# 
-# surv_newX_LD33 <- expand.grid(
-#   juju = seq(0,0.5,length = 10),
-#   copper = seq(0,25, length = 10),  
-#   cloneID = "high_LD33")
-# 
-# surv_LD33_effects_lp <- predict(mod3_LD33, type = "lp", newdata = surv_newX_LD33, re.form = NA)  # linear prediction
-# surv_LD33_effects_risk <- predict(mod3_LD33, type = "risk", newdata = surv_newX_LD33, re.form = NA)  # risk factor 
-# 
-# # housekeeping
-# surv_plotData_LD33 <- data.table(surv_newX_LD33, clone_effect_lp=surv_LD33_effects_lp, clone_effect_risk=surv_LD33_effects_risk)
-# 
-# 
-# # D86A
-# mod3_D86A <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "low_D86A"]))
-# plot_model(mod3_D86A, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
-# 
-# surv_newX_D86A <- expand.grid(
-#   juju = seq(0,0.5,length = 10),
-#   copper = seq(0,25, length = 10),  
-#   cloneID = "low_D86A")
-# 
-# surv_D86A_effects_lp <- predict(mod3_D86A, type = "lp", newdata = surv_newX_D86A, re.form = NA)  # linear prediction
-# surv_D86A_effects_risk <- predict(mod3_D86A, type = "risk", newdata = surv_newX_D86A, re.form = NA)  # risk factor 
-# 
-# # housekeeping
-# surv_plotData_D86A <- data.table(surv_newX_D86A, clone_effect_lp=surv_D86A_effects_lp, clone_effect_risk=surv_D86A_effects_risk)
-# 
-# 
-# # D87A
-# mod3_D87A <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "low_D87A"]))
-# plot_model(mod3_D87A, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
-# 
-# surv_newX_D87A <- expand.grid(
-#   juju = seq(0,0.5,length = 10),
-#   copper = seq(0,25, length = 10),  
-#   cloneID = "low_D87A")
-# 
-# surv_D87A_effects_lp <- predict(mod3_D87A, type = "lp", newdata = surv_newX_D87A, re.form = NA)  # linear prediction
-# surv_D87A_effects_risk <- predict(mod3_D87A, type = "risk", newdata = surv_newX_D87A, re.form = NA)  # risk factor 
-# 
-# # housekeeping
-# surv_plotData_D87A <- data.table(surv_newX_D87A, clone_effect_lp=surv_D87A_effects_lp, clone_effect_risk=surv_D87A_effects_risk)
-# 
-# 
-# # Cyril
-# mod3_Cyril <- coxph(Surv(survival_time,alive_dead) ~ juju + copper + juju*copper, data = na.omit(survival[cloneID == "low_Cyril"]))
-# plot_model(mod3_Cyril, type = "pred", terms = c("juju", "copper"), show.data = F, ci.lvl = .95)  # Predicted values (marginal effects) for specific model terms. 
-# 
-# surv_newX_Cyril <- expand.grid(
-#   juju = seq(0,0.5,length = 10),
-#   copper = seq(0,25, length = 10),  
-#   cloneID = "low_Cyril")
-# 
-# surv_Cyril_effects_lp <- predict(mod3_Cyril, type = "lp", newdata = surv_newX_Cyril, re.form = NA)  # linear prediction
-# surv_Cyril_effects_risk <- predict(mod3_Cyril, type = "risk", newdata = surv_newX_Cyril, re.form = NA)  # risk factor 
-# 
-# # housekeeping
-# surv_plotData_Cyril <- data.table(surv_newX_Cyril, clone_effect_lp=surv_Cyril_effects_lp, clone_effect_risk=surv_Cyril_effects_risk)
-# 
-# 
-# # combine all clone_effects
-# surv_clone_plotData <- as.data.table(rbind(surv_plotData_C14, surv_plotData_Chard, surv_plotData_LD33,
-#                                            surv_plotData_D86A, surv_plotData_D87A, surv_plotData_Cyril))
-
-
-# # alternative plot for clone-specific responses: each panel gets its own colour legend.... (might be handy if we need to plot risk factors - instead of linear predictions)
-# transform(surv_clone_plotData,
-#                             cloneID = factor(cloneID, levels=c('high_C14', 'high_Chard', 'high_LD33', 'low_D86A', 'low_D87A', 'low_Cyril'))) %>%
-#                   
-#                             group_split(cloneID) %>%
-#                   
-#                             map(
-#                               ~ggplot(., aes(juju, copper)) +
-#                                 geom_raster(aes(fill = clone_effect_risk), interpolate = TRUE) +
-#                                 scale_fill_continuous(type = "viridis") +
-#                                 scale_x_continuous(breaks=c(0,0.1,0.2,0.3,0.4,0.5)) +
-#                                 labs(y=expression(copper~(mg~L^{-1})), x=expression(juju~(µl~ml^{-1}))) +
-#                                 facet_grid(~ cloneID) +
-#                                 theme(rect = element_rect(fill = "transparent"),
-#                                       panel.grid.major = element_line(colour = "grey70", size=0.25),
-#                                       panel.grid.minor = element_line(colour = "grey90", size=0.1),
-#                                       panel.background = element_rect(fill = "transparent",colour = NA),
-#                                       plot.background = element_rect(fill = "transparent",colour = NA),
-#                                       axis.line = element_line(size = 1),
-#                                       axis.title.x = element_text(size=12, family='Arial'),
-#                                       axis.title.y = element_text(size=12, family='Arial'),
-#                                       axis.text.x = element_text(angle = 45,vjust = 0.5, hjust=0.5),
-#                                       axis.text = element_text(size=12, family='Arial'),
-#                                       strip.text.x = element_text(size =10, color = "black"),
-#                                       strip.text.y = element_text(size =10, color = "black"),
-#                                       panel.spacing.x = unit(4, "mm"),
-#                                       panel.spacing.y = unit(1, "mm"))
-#                   
-#                             ) %>%
-#                             plot_grid()  # can't get this to work: plot_grid(plotlist = ., align = 'hv', ncol = 3)
 
